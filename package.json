@@ -17,10 +17,11 @@
   "author": "Dirk Riehle",
   "license": "",
   "devDependencies": {
-    "@types/node": "^22.9.0",
-    "typescript": "^5.5.4"
+    "@types/node": "^22.18.10",
+    "typescript": "^5.9.3"
   },
   "dependencies": {
-    "vitest": "^2.0.5"
+    "npm": "^11.6.2",
+    "vitest": "^3.2.4"
   }
 }
