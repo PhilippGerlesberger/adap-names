@@ -2,6 +2,10 @@ import { Coordinate } from "./Coordinate";
 
 export abstract class AbstractCoordinate implements Coordinate {
 
+    public toString(): string {
+        return this.asDataString();
+    }
+
     public asDataString(): string {
         return this.doGetX() + "#" + this.doGetY();
     }
@@ -13,16 +17,12 @@ export abstract class AbstractCoordinate implements Coordinate {
     public getHashCode(): number {
         let hashCode: number = 0;
         const s: string = this.asDataString();
-        for (let i = 0; i < s.length; i++) {
-            let c = s.charCodeAt(i);
+        for (let i: number = 0; i < s.length; i++) {
+            let c: number = s.charCodeAt(i);
             hashCode = (hashCode << 5) - hashCode + c;
             hashCode |= 0;
         }
         return hashCode;
-    }
-
-    public clone(): Coordinate {
-        return { ...this };
     }
 
     abstract reset(): void;

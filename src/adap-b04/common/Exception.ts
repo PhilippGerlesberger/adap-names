@@ -1,14 +1,27 @@
+import { InvalidStateException } from "./InvalidStateException";
+
 /**
  * Root class for exceptions in ADAP examples
  */
 export abstract class Exception extends Error {
 
-    static isNullOrUndefined(o: Object | null) {
-        return (o == undefined) || (o == null);
+    protected trigger: Exception | null = null;
+
+    constructor(m: string, t?: Exception) {
+        super(m);
+
+        if (t != undefined) {
+            this.trigger = t;
+        }
     }
 
-    constructor(m: string) {
-        super(m);
+    public hasTrigger(): boolean {
+        return this.trigger != null;
+    }
+
+    public getTrigger(): Exception {
+        // @todo check if trigger is null
+        return this.trigger as Exception;
     }
 
 }
