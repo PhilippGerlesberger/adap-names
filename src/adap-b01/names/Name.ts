@@ -17,12 +17,38 @@ export class Name {
 
     private delimiter: string = DEFAULT_DELIMITER;
     private components: string[] = [];
+    private mask: string = ESCAPE_CHARACTER;
+    private masked_delimiter : string = ESCAPE_CHARACTER + DEFAULT_DELIMITER;
+    private masked_escape : string = ESCAPE_CHARACTER + ESCAPE_CHARACTER;
 
     /** Expects that all Name components are properly masked */
     // @methodtype: Initialization method
     constructor(other: string[], delimiter?: string) {
         this.delimiter = delimiter ? delimiter : DEFAULT_DELIMITER;
+        if (this.delimiter === ESCAPE_CHARACTER) {
+            this.mask = "#";
+            this.masked_delimiter = "#" + this.delimiter;
+            this.masked_escape = "#" + ESCAPE_CHARACTER;
+        }
+        for (let c of other) {
+            if (!this.isProperlyMasked(c)) {
+                throw new Error("Component " + c + " to initialize is not properly masked");
+            }
+        }
         this.components = other.slice();
+    }
+
+    // @methodtype: Boolean query method
+    public isProperlyMasked(a: string): boolean {
+        const c = a.replaceAll(this.masked_escape, '')
+                    .replaceAll(this.masked_delimiter, '')
+                    .replaceAll(this.mask + this.mask, '');
+        for (let i = 0; i < c.length; i++) {
+            if (c.charAt(i) === this.delimiter || c.charAt(i) === ESCAPE_CHARACTER || c.charAt(i) === this.mask) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -55,6 +81,9 @@ export class Name {
 
     // @methodtype: Set method
     public setComponent(i: number, c: string): void {
+        if (!this.isProperlyMasked(c)) {
+            throw new Error("Component to set is not properly masked");
+        }
         this.components[i] = c;
     }
 
@@ -67,17 +96,29 @@ export class Name {
     /** Expects that new Name component c is properly masked */
     // @methodtype: Command method
     public insert(i: number, c: string): void {
+        if (i < 0 || i > this.components.length) {
+            throw new Error("Index to insert is out of bounds");
+        }
+        if (!this.isProperlyMasked(c)) {
+            throw new Error("Component to insert is not properly masked");
+        }
         this.components.splice(i, 0, c);
     }
 
     /** Expects that new Name component c is properly masked */
     // @methodtype: Command method
     public append(c: string): void {
+        if (!this.isProperlyMasked(c)) {
+            throw new Error("Component to append is not properly masked");
+        }
         this.components.push(c);
     }
 
     // @methodtype: Command method
     public remove(i: number): void {
+        if (i < 0 || i > this.components.length) {
+            throw new Error("Index to remove is out of bounds");
+        }
         this.components.splice(i, 1);
     }
 }
