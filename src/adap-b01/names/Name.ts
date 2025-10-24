@@ -51,17 +51,25 @@ export class Name {
         return true;
     }
 
+    private unmaskComponent(c: string): string {
+        let ret = c
+            .replaceAll(this.masked_escape, ESCAPE_CHARACTER)
+            .replaceAll(this.masked_delimiter, this.delimiter);
+
+        if (this.mask === "#") {
+            ret = ret.replaceAll(this.mask + this.mask, this.mask);
+        }
+
+        return ret;
+    }
+
     /**
      * Returns a human-readable representation of the Name instance using user-set special characters
      * Special characters are not escaped (creating a human-readable string)
      * Users can vary the delimiter character to be used
      */
     public asString(delimiter: string = this.delimiter): string {
-        let ret : string = this.components[0];
-        for (let i = 1; i < this.components.length; i++) {
-            ret += delimiter + this.components[i];
-        }
-        return ret;
+        return this.components.map(c => this.unmaskComponent(c)).join(delimiter);
     }
 
     /** 
