@@ -78,7 +78,7 @@ export class Name {
      * The special characters in the data string are the default characters
      */
     public asDataString(): string {
-        throw new Error("needs implementation or deletion");
+        return this.components.join(this.delimiter);
     }
 
     /** Returns properly masked component string */
