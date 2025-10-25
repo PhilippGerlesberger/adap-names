@@ -38,6 +38,41 @@ export class Name {
         this.components = other.slice();
     }
 
+    public asComponents(name: string): string[] {
+        let ret: string[] = [];
+        let current_component: string = "";
+        let masked: boolean = false;
+
+        // FIXME also mask must be masked
+        for (let i = 0; i < name.length; i++) {
+            if (!masked && name.charAt(i) === this.delimiter) {
+                // it's a real delimiter
+                ret.push(current_component);
+                current_component = "";
+                continue;
+            }
+            if (name.charAt(i) === this.mask) {
+                masked = !masked;
+            }
+            current_component += name.charAt(i);
+        }
+        ret.push(current_component);
+        return ret;
+    }
+
+    public compareComponents(other: string[]): boolean {
+        if (this.components.length !== other.length) {
+            return false;
+        }
+        for (let i = 0; i < this.components.length; i++) {
+            if (this.components[i] !== other[i]) {
+                console.log("Mismatch at index " + i + ": " + this.components[i] + " !== " + other[i]);
+                return false;
+            } 
+        }
+        return true;
+    }
+
     // @methodtype: Boolean query method
     public isProperlyMasked(a: string): boolean {
         const c = a.replaceAll(this.masked_escape, '')
@@ -49,6 +84,20 @@ export class Name {
             }
         }
         return true;
+    }
+
+    private maskSpecialCharacters(c: string): string {
+        if (this.delimiter !== ESCAPE_CHARACTER) {
+            // normale case: Special characters were masked with ESCAPE_CHARACTER
+            // \\ -> \\\\ and . -> \\.
+            return c.replaceAll(ESCAPE_CHARACTER, this.masked_escape)
+                    .replaceAll(this.delimiter, this.masked_delimiter);
+        } else {
+            // special case: delimiter is ESCAPE_CHARACTER, so we use '#' to mask special characters
+            // # -> ## and \\ -> #\\
+            return c.replaceAll(this.mask, this.mask + this.mask)
+                    .replaceAll(ESCAPE_CHARACTER, this.masked_escape);
+        }
     }
 
     private unmaskComponent(c: string): string {
