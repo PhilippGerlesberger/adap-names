@@ -100,16 +100,18 @@ export class Name {
         }
     }
 
-    private unmaskComponent(c: string): string {
-        let ret = c
-            .replaceAll(this.masked_escape, ESCAPE_CHARACTER)
-            .replaceAll(this.masked_delimiter, this.delimiter);
-
-        if (this.mask === "#") {
-            ret = ret.replaceAll(this.mask + this.mask, this.mask);
+    private unmaskSpecialCharacters(c: string): string {
+        if (this.delimiter !== ESCAPE_CHARACTER) {
+            // normale case: Special characters were masked with ESCAPE_CHARACTER
+            // \\\\ -> \\ and \\. -> .
+            return c.replaceAll(this.masked_escape, ESCAPE_CHARACTER)
+                    .replaceAll(this.masked_delimiter, this.delimiter);
+        } else {
+            // special case: delimiter is ESCAPE_CHARACTER, so we use '#' to mask special characters
+            // ## -> # and #\\ -> \\
+            return c.replaceAll(this.mask + this.mask, this.mask)
+                    .replaceAll(this.masked_escape, ESCAPE_CHARACTER);
         }
-
-        return ret;
     }
 
     /**
@@ -118,7 +120,7 @@ export class Name {
      * Users can vary the delimiter character to be used
      */
     public asString(delimiter: string = this.delimiter): string {
-        return this.components.map(c => this.unmaskComponent(c)).join(delimiter);
+        return this.components.map(c => this.unmaskSpecialCharacters(c)).join(delimiter);
     }
 
     /** 
