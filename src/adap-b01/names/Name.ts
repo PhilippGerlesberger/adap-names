@@ -46,7 +46,7 @@ export class Name {
      */
     // @methodtype: Conversion method
     public asString(delimiter: string = this.delimiter): string {
-        return this.components.map(c => this.unmaskSpecialCharacters(c)).join(delimiter);
+        return this.components.map(c => this.asUnmaskedString(c)).join(delimiter);
     }
 
     /** 
@@ -124,20 +124,21 @@ export class Name {
     private asComponents(name: string): string[] {
         let ret: string[] = [];
         let current_component: string = "";
-        let masked: boolean = false;
+        let is_masked: boolean = false;
 
-        for (let i = 0; i < name.length; i++) {
-            if (!masked && name.charAt(i) === this.delimiter) {
+        for (const n of name) {
+            if (!is_masked && n === this.delimiter) {
                 // it's a real delimiter
                 ret.push(current_component);
                 current_component = "";
                 continue;
             }
-            if (name.charAt(i) === ESCAPE_CHARACTER) {
-                masked = !masked;
+            if (n === ESCAPE_CHARACTER) {
+                is_masked = !is_masked;
             }
-            current_component += name.charAt(i);
+            current_component += n;
         }
+
         ret.push(current_component);
         return ret;
     }
@@ -178,7 +179,7 @@ export class Name {
     }
 
     // @methodtype: Conversion method
-    private maskSpecialCharacters(c: string): string {
+    private asMaskedString(c: string): string {
         let ret = c;
 
         for (const sc of this.special_characters) {
@@ -189,7 +190,7 @@ export class Name {
     }
 
     // @methodtype: Conversion method
-    private unmaskSpecialCharacters(c: string): string {
+    private asUnmaskedString(c: string): string {
         let ret = c;
 
         for (const sc of this.special_characters) {
