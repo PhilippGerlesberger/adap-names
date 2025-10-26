@@ -17,18 +17,15 @@ export class Name {
 
     private delimiter: string = DEFAULT_DELIMITER;
     private components: string[] = [];
-    private mask: string = ESCAPE_CHARACTER;
-    private masked_delimiter : string = ESCAPE_CHARACTER + DEFAULT_DELIMITER;
-    private masked_escape : string = ESCAPE_CHARACTER + ESCAPE_CHARACTER;
+    private special_characters: Set<string> = new Set([ESCAPE_CHARACTER, DEFAULT_DELIMITER]);
 
     /** Expects that all Name components are properly masked */
     // @methodtype: Initialization method
     constructor(other: string[], delimiter?: string) {
         this.delimiter = delimiter ? delimiter : DEFAULT_DELIMITER;
-        if (this.delimiter === ESCAPE_CHARACTER) {
-            this.mask = "#";
-            this.masked_delimiter = "#" + this.delimiter;
-            this.masked_escape = "#" + ESCAPE_CHARACTER;
+        if (delimiter) {
+            this.delimiter = delimiter;
+            this.special_characters.add(delimiter);
         }
         for (let c of other) {
             if (!this.isProperlyMasked(c)) {
@@ -43,7 +40,6 @@ export class Name {
         let current_component: string = "";
         let masked: boolean = false;
 
-        // FIXME also mask must be masked
         for (let i = 0; i < name.length; i++) {
             if (!masked && name.charAt(i) === this.delimiter) {
                 // it's a real delimiter
@@ -51,7 +47,7 @@ export class Name {
                 current_component = "";
                 continue;
             }
-            if (name.charAt(i) === this.mask) {
+            if (name.charAt(i) === ESCAPE_CHARACTER) {
                 masked = !masked;
             }
             current_component += name.charAt(i);
@@ -74,44 +70,40 @@ export class Name {
     }
 
     // @methodtype: Boolean query method
-    public isProperlyMasked(a: string): boolean {
-        const c = a.replaceAll(this.masked_escape, '')
-                    .replaceAll(this.masked_delimiter, '')
-                    .replaceAll(this.mask + this.mask, '');
-        for (let i = 0; i < c.length; i++) {
-            if (c.charAt(i) === this.delimiter || c.charAt(i) === ESCAPE_CHARACTER || c.charAt(i) === this.mask) {
+    public isProperlyMasked(c: string): boolean {
+        let remaining = c;
+
+        for (const sc of this.special_characters) {
+            remaining = remaining.replaceAll(ESCAPE_CHARACTER + sc, "");
+        }
+
+        for (const r of remaining) {
+            if (this.special_characters.has(r)) {
                 return false;
             }
         }
+
         return true;
     }
 
     private maskSpecialCharacters(c: string): string {
-        if (this.delimiter !== ESCAPE_CHARACTER) {
-            // normale case: Special characters were masked with ESCAPE_CHARACTER
-            // \\ -> \\\\ and . -> \\.
-            return c.replaceAll(ESCAPE_CHARACTER, this.masked_escape)
-                    .replaceAll(this.delimiter, this.masked_delimiter);
-        } else {
-            // special case: delimiter is ESCAPE_CHARACTER, so we use '#' to mask special characters
-            // # -> ## and \\ -> #\\
-            return c.replaceAll(this.mask, this.mask + this.mask)
-                    .replaceAll(ESCAPE_CHARACTER, this.masked_escape);
+        let ret = c;
+
+        for (const sc of this.special_characters) {
+            ret = ret.replaceAll(sc, ESCAPE_CHARACTER + sc);
         }
+
+        return ret;
     }
 
     private unmaskSpecialCharacters(c: string): string {
-        if (this.delimiter !== ESCAPE_CHARACTER) {
-            // normale case: Special characters were masked with ESCAPE_CHARACTER
-            // \\\\ -> \\ and \\. -> .
-            return c.replaceAll(this.masked_escape, ESCAPE_CHARACTER)
-                    .replaceAll(this.masked_delimiter, this.delimiter);
-        } else {
-            // special case: delimiter is ESCAPE_CHARACTER, so we use '#' to mask special characters
-            // ## -> # and #\\ -> \\
-            return c.replaceAll(this.mask + this.mask, this.mask)
-                    .replaceAll(this.masked_escape, ESCAPE_CHARACTER);
+        let ret = c;
+
+        for (const sc of this.special_characters) {
+            ret = ret.replaceAll(ESCAPE_CHARACTER + sc, sc);
         }
+
+        return ret;
     }
 
     /**
@@ -175,7 +167,7 @@ export class Name {
 
     // @methodtype: Command method
     public remove(i: number): void {
-        if (i < 0 || i > this.components.length) {
+        if (i < 0 || i >= this.components.length) {
             throw new Error("Index to remove is out of bounds");
         }
         this.components.splice(i, 1);
