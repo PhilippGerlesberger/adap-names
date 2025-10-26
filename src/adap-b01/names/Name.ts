@@ -44,6 +44,7 @@ export class Name {
      * Special characters are not escaped (creating a human-readable string)
      * Users can vary the delimiter character to be used
      */
+    // @methodtype: Conversion method
     public asString(delimiter: string = this.delimiter): string {
         return this.components.map(c => this.unmaskSpecialCharacters(c)).join(delimiter);
     }
@@ -53,6 +54,7 @@ export class Name {
      * Machine-readable means that from a data string, a Name can be parsed back in
      * The special characters in the data string are the default characters
      */
+    // @methodtype: Conversion method
     public asDataString(): string {
         return this.components.join(this.delimiter);
     }
@@ -118,6 +120,7 @@ export class Name {
     // Private Parsing and Component
     // --------------------------------------------------------------------------------------------
 
+    // @methodtype: Conversion method
     private asComponents(name: string): string[] {
         let ret: string[] = [];
         let current_component: string = "";
@@ -139,6 +142,7 @@ export class Name {
         return ret;
     }
 
+    // @methodtype: Comparison method
     private compareComponents(other: string[]): boolean {
         if (this.components.length !== other.length) {
             return false;
@@ -147,7 +151,7 @@ export class Name {
             if (this.components[i] !== other[i]) {
                 console.log("Mismatch at index " + i + ": " + this.components[i] + " !== " + other[i]);
                 return false;
-            } 
+            }
         }
         return true;
     }
@@ -173,6 +177,7 @@ export class Name {
         return true;
     }
 
+    // @methodtype: Conversion method
     private maskSpecialCharacters(c: string): string {
         let ret = c;
 
@@ -183,6 +188,7 @@ export class Name {
         return ret;
     }
 
+    // @methodtype: Conversion method
     private unmaskSpecialCharacters(c: string): string {
         let ret = c;
 
