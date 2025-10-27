@@ -22,8 +22,10 @@ export class Name {
     /** Expects that all Name components are properly masked */
     // @methodtype: Initialization method
     constructor(other: string[], delimiter?: string) {
-        this.delimiter = delimiter ? delimiter : DEFAULT_DELIMITER;
         if (delimiter) {
+            if (delimiter.length !== 1) {
+                throw new Error("Delimiter must be a single character.")
+            }
             this.delimiter = delimiter;
             this.special_characters.add(delimiter);
         }
@@ -121,7 +123,7 @@ export class Name {
     // --------------------------------------------------------------------------------------------
 
     // @methodtype: Conversion method
-    private asComponents(name: string): string[] {
+    public asComponents(name: string): string[] {
         let ret: string[] = [];
         let current_component: string = "";
         let is_masked: boolean = false;
@@ -144,7 +146,7 @@ export class Name {
     }
 
     // @methodtype: Comparison method
-    private compareComponents(other: string[]): boolean {
+    public compareComponents(other: string[]): boolean {
         if (this.components.length !== other.length) {
             return false;
         }
