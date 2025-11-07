@@ -44,7 +44,7 @@ export class StringName implements Name {
      * The special characters in the data string are the default characters
      */
     public asDataString(): string {
-        throw new Error("needs implementation or deletion");
+        return this.asComponents(this.name).join(DEFAULT_DELIMITER)
     }
 
     public getDelimiterCharacter(): string {
@@ -83,4 +83,27 @@ export class StringName implements Name {
         throw new Error("needs implementation or deletion");
     }
 
+    // Utility functions
+
+    public asComponents(name: string): string[] {
+        let ret: string[] = [];
+        let current_component: string = "";
+        let is_masked: boolean = false;
+
+        for (const n of name) {
+            if (!is_masked && n === this.delimiter) {
+                // it's a real delimiter
+                ret.push(current_component);
+                current_component = "";
+                continue;
+            }
+            if (n === ESCAPE_CHARACTER) {
+                is_masked = !is_masked;
+            }
+            current_component += n;
+        }
+
+        ret.push(current_component);
+        return ret;
+    }
 }
