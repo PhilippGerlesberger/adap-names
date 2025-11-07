@@ -160,6 +160,8 @@ export class StringName implements Name {
         } else {
             this.name += this.delimiter + dataString;
         }
+
+        this.noComponents += other.getNoComponents();
     }
 
     // Utility functions
