@@ -21,6 +21,7 @@ export class StringName implements Name {
             this.special_characters.add(delimiter);
         }
 
+        this.noComponents = this.getNoComponents()
         this.name = source.slice();
     }
 
