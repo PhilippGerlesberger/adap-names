@@ -35,7 +35,7 @@ export class StringName implements Name {
      * Users can vary the delimiter character to be used
      */
     public asString(delimiter: string = this.delimiter): string {
-        return this.name;
+        return this.asUnmaskedString(this.name);
     }
 
     /**
@@ -44,7 +44,7 @@ export class StringName implements Name {
      * The special characters in the data string are the default characters
      */
     public asDataString(): string {
-        return this.asComponents(this.name).join(DEFAULT_DELIMITER)
+        return this.name;
     }
 
     public getDelimiterCharacter(): string {
@@ -84,6 +84,16 @@ export class StringName implements Name {
     }
 
     // Utility functions
+
+    private asUnmaskedString(c: string): string {
+        let ret = c;
+
+        for (const sc of this.special_characters) {
+            ret = ret.replaceAll(ESCAPE_CHARACTER + sc, sc);
+        }
+
+        return ret;
+    }
 
     public asComponents(name: string): string[] {
         let ret: string[] = [];
