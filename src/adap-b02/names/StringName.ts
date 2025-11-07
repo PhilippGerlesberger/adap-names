@@ -35,7 +35,7 @@ export class StringName implements Name {
      * Users can vary the delimiter character to be used
      */
     public asString(delimiter: string = this.delimiter): string {
-        throw new Error("needs implementation or deletion");
+        return this.name;
     }
 
     /**
@@ -48,11 +48,11 @@ export class StringName implements Name {
     }
 
     public getDelimiterCharacter(): string {
-        throw new Error("needs implementation or deletion");
+        return this.delimiter;
     }
 
     public isEmpty(): boolean {
-        throw new Error("needs implementation or deletion");
+        return this.noComponents === 0;
     }
 
     public getNoComponents(): number {
