@@ -8,53 +8,148 @@ export class StringArrayName implements Name {
 
     protected delimiter: string = DEFAULT_DELIMITER;
     protected components: string[] = [];
+    private special_characters: Set<string> = new Set([ESCAPE_CHARACTER, DEFAULT_DELIMITER]);
 
-    constructor(source: string[], delimiter?: string) {
-        throw new Error("needs implementation or deletion");
+    constructor(other: string[], delimiter?: string) {
+        if (delimiter) {
+            if (delimiter.length !== 1) {
+                throw new Error("Delimiter must be a single character.")
+            }
+            this.delimiter = delimiter;
+            this.special_characters.add(delimiter);
+        }
+        for (let c of other) {
+            if (!this.isProperlyMasked(c)) {
+                throw new Error("Component " + c + " to initialize is not properly masked");
+            }
+        }
+        this.components = other.slice();
     }
 
+    // --------------------------------------------------------------------------------------------
+    // String Representations
+    // --------------------------------------------------------------------------------------------
+
+    /**
+     * Returns a human-readable representation of the Name instance using user-set special characters
+     * Special characters are not escaped (creating a human-readable string)
+     * Users can vary the delimiter character to be used
+     */
     public asString(delimiter: string = this.delimiter): string {
-        throw new Error("needs implementation or deletion");
+        return this.components.map(c => this.asUnmaskedString(c)).join(delimiter);
     }
 
+    /** 
+     * Returns a machine-readable representation of Name instance using default special characters
+     * Machine-readable means that from a data string, a Name can be parsed back in
+     * The special characters in the data string are the default characters
+     */
     public asDataString(): string {
-        throw new Error("needs implementation or deletion");
+        return this.components.join(this.delimiter);
     }
 
     public getDelimiterCharacter(): string {
-        throw new Error("needs implementation or deletion");
+        return this.delimiter;
     }
 
     public isEmpty(): boolean {
-        throw new Error("needs implementation or deletion");
+        return this.getNoComponents() === 0;
     }
 
-    public getNoComponents(): number {
-        throw new Error("needs implementation or deletion");
-    }
+    // --------------------------------------------------------------------------------------------
+    // Getters and Setters
+    // --------------------------------------------------------------------------------------------
 
+    /** Returns properly masked component string */
     public getComponent(i: number): string {
-        throw new Error("needs implementation or deletion");
+        return this.components[i];
     }
 
     public setComponent(i: number, c: string): void {
-        throw new Error("needs implementation or deletion");
+        if (!this.isProperlyMasked(c)) {
+            throw new Error("Component to set is not properly masked");
+        }
+        this.components[i] = c;
     }
 
+     /** Returns number of components in Name instance */
+     public getNoComponents(): number {
+        return this.components.length;
+    }
+
+    // --------------------------------------------------------------------------------------------
+    // Command Methods (Mutators)
+    // --------------------------------------------------------------------------------------------
+
+    /** Expects that new Name component c is properly masked */
     public insert(i: number, c: string): void {
-        throw new Error("needs implementation or deletion");
+        if (i < 0 || i > this.components.length) {
+            throw new Error("Index to insert is out of bounds");
+        }
+        if (!this.isProperlyMasked(c)) {
+            throw new Error("Component to insert is not properly masked");
+        }
+        this.components.splice(i, 0, c);
     }
 
+    /** Expects that new Name component c is properly masked */
     public append(c: string): void {
-        throw new Error("needs implementation or deletion");
+        if (!this.isProperlyMasked(c)) {
+            throw new Error("Component to append is not properly masked");
+        }
+        this.components.push(c);
     }
 
     public remove(i: number): void {
-        throw new Error("needs implementation or deletion");
+        if (i < 0 || i >= this.components.length) {
+            throw new Error("Index to remove is out of bounds");
+        }
+        this.components.splice(i, 1);
     }
 
     public concat(other: Name): void {
-        throw new Error("needs implementation or deletion");
+        for (let i = 0; i < other.getNoComponents(); i++) {
+            this.append(other.getComponent(i))
+        }
     }
 
+    // --------------------------------------------------------------------------------------------
+    // Private Masking Utilities
+    // --------------------------------------------------------------------------------------------
+
+    private isProperlyMasked(c: string): boolean {
+        let remaining = c;
+
+        for (const sc of this.special_characters) {
+            remaining = remaining.replaceAll(ESCAPE_CHARACTER + sc, "");
+        }
+
+        for (const r of remaining) {
+            if (this.special_characters.has(r)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private asMaskedString(c: string): string {
+        let ret = c;
+
+        for (const sc of this.special_characters) {
+            ret = ret.replaceAll(sc, ESCAPE_CHARACTER + sc);
+        }
+
+        return ret;
+    }
+
+    private asUnmaskedString(c: string): string {
+        let ret = c;
+
+        for (const sc of this.special_characters) {
+            ret = ret.replaceAll(ESCAPE_CHARACTER + sc, sc);
+        }
+
+        return ret;
+    }
 }
