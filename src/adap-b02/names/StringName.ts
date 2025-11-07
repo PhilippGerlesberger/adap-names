@@ -81,7 +81,7 @@ export class StringName implements Name {
         // FIXME string c could have delimiter characters
         let components: string[] = [];
 
-        if (n < 0 || this.getNoComponents() < n) {
+        if (n < 0 || this.getNoComponents() <= n) {
             throw new Error("Component index out of bounds");
         }
 
