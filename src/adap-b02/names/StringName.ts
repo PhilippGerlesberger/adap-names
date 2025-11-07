@@ -55,6 +55,10 @@ export class StringName implements Name {
         return this.noComponents === 0;
     }
 
+    // --------------------------------------------------------------------------------------------
+    // Getter and Setter
+    // --------------------------------------------------------------------------------------------
+
     public getNoComponents(): number {
         return this.noComponents;
     }
@@ -67,11 +71,33 @@ export class StringName implements Name {
     }
 
     public getComponent(x: number): string {
-        throw new Error("needs implementation or deletion");
+        if (x < 0 || this.getNoComponents() < x) {
+            throw new Error("Component index out of bounds");
+        }
+        return this.asComponents(this.name)[x];
     }
 
     public setComponent(n: number, c: string): void {
-        throw new Error("needs implementation or deletion");
+        let components: string[] = [];
+
+        if (n < 0 || this.getNoComponents() < n) {
+            throw new Error("Component index out of bounds");
+        }
+
+        for (let i = 0; i < n; i++) {
+            components.push(this.getComponent(i));
+        }
+        components.push(c);
+        for (let i = n; i < this.getNoComponents(); i++) {
+            components.push(c);
+        }
+
+        this.doIncrementNoComponents();
+        this.name = components.join(this.delimiter);
+    }
+
+    private doIncrementNoComponents(): void {
+        this.noComponents++;
     }
 
     public insert(n: number, c: string): void {
@@ -123,6 +149,7 @@ export class StringName implements Name {
         ret.push(current_component);
         return ret;
     }
+
 
     private countNoComponents(): number {
         let ret = 0;
