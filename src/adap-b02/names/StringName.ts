@@ -78,6 +78,7 @@ export class StringName implements Name {
     }
 
     public setComponent(n: number, c: string): void {
+        // FIXME string c could have delimiter characters
         let components: string[] = [];
 
         if (n < 0 || this.getNoComponents() < n) {
@@ -95,6 +96,7 @@ export class StringName implements Name {
     }
 
     public insert(n: number, c: string): void {
+        // FIXME string c could have delimiter characters
         let components: string[] = [];
 
         if (n < 0 || this.getNoComponents() < n) {
@@ -114,15 +116,50 @@ export class StringName implements Name {
     }
 
     public append(c: string): void {
-        throw new Error("needs implementation or deletion");
+        // FIXME string c could have delimiter characters
+        this.doIncrementNoComponents();
+        if (this.getNoComponents() === 0) {
+            this.name = c;
+        } else {
+            this.name += this.delimiter + c;
+        }
     }
 
     public remove(n: number): void {
-        throw new Error("needs implementation or deletion");
+        let components: string[] = [];
+
+        if (n < 0 || this.getNoComponents() <= n) {
+            throw new Error("Component index out of bounds");
+        }
+
+        for (let i = 0; i < this.getNoComponents(); i++) {
+            if (i !== n) {
+                components.push(this.getComponent(i));
+            }
+        }
+
+        this.noComponents--;
+        this.name = components.join(this.delimiter);
     }
 
     public concat(other: Name): void {
-        throw new Error("needs implementation or deletion");
+        const delimiter = other.getDelimiterCharacter()
+        let dataString = other.asDataString()
+
+        if (other.getNoComponents() === 0) {
+            // Nothing to do
+            return
+        }
+
+        if (!this.special_characters.has(delimiter)) {
+            dataString.replace(ESCAPE_CHARACTER + delimiter, delimiter)
+        }
+
+        if (this.getNoComponents() === 0) {
+            this.name = dataString;
+        } else {
+            this.name += this.delimiter + dataString;
+        }
     }
 
     // Utility functions
