@@ -84,6 +84,23 @@ export class StringName implements Name {
             throw new Error("Component index out of bounds");
         }
 
+        components = this.asComponents(this.name);
+        components[n] = c;
+        this.doIncrementNoComponents();
+        this.name = components.join(this.delimiter);
+    }
+
+    private doIncrementNoComponents(): void {
+        this.noComponents++;
+    }
+
+    public insert(n: number, c: string): void {
+        let components: string[] = [];
+
+        if (n < 0 || this.getNoComponents() < n) {
+            throw new Error("Component index out of bounds");
+        }
+
         for (let i = 0; i < n; i++) {
             components.push(this.getComponent(i));
         }
@@ -94,14 +111,6 @@ export class StringName implements Name {
 
         this.doIncrementNoComponents();
         this.name = components.join(this.delimiter);
-    }
-
-    private doIncrementNoComponents(): void {
-        this.noComponents++;
-    }
-
-    public insert(n: number, c: string): void {
-        throw new Error("needs implementation or deletion");
     }
 
     public append(c: string): void {
