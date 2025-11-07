@@ -1,6 +1,9 @@
 import { DEFAULT_DELIMITER, ESCAPE_CHARACTER } from "../common/Printable";
 import { Name } from "./Name";
 
+/**
+ * StringArrayName class uses a string[] as the internal representation of a name
+ */
 export class StringArrayName implements Name {
 
     protected delimiter: string = DEFAULT_DELIMITER;
