@@ -21,7 +21,7 @@ export class StringName implements Name {
             this.special_characters.add(delimiter);
         }
 
-        this.noComponents = this.getNoComponents()
+        this.setNoComponents(this.countNoComponents());
         this.name = source.slice();
     }
 
@@ -56,7 +56,14 @@ export class StringName implements Name {
     }
 
     public getNoComponents(): number {
-        throw new Error("needs implementation or deletion");
+        return this.noComponents;
+    }
+
+    private setNoComponents(n: number): void {
+        if (n < 0) {
+            throw new Error("Number of components must be a positive integer");
+        }
+        this.noComponents = n;
     }
 
     public getComponent(x: number): string {
@@ -114,6 +121,24 @@ export class StringName implements Name {
         }
 
         ret.push(current_component);
+        return ret;
+    }
+
+    private countNoComponents(): number {
+        let ret = 0;
+        let is_masked: boolean = false;
+
+        for (const n of this.name) {
+            if (!is_masked && n === this.delimiter) {
+                // it's a real delimiter
+                ret++;
+                continue;
+            }
+            if (n === ESCAPE_CHARACTER) {
+                is_masked = !is_masked;
+            }
+        }
+
         return ret;
     }
 }
