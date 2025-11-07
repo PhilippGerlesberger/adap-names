@@ -89,7 +89,7 @@ export class StringName implements Name {
         }
         components.push(c);
         for (let i = n; i < this.getNoComponents(); i++) {
-            components.push(c);
+            components.push(this.getComponent(i));
         }
 
         this.doIncrementNoComponents();
