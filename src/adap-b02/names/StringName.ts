@@ -78,7 +78,7 @@ export class StringName implements Name {
     }
 
     public setComponent(n: number, c: string): void {
-        // FIXME string c could have delimiter characters
+        // FIXME: string c could have delimiter characters
         let components: string[] = [];
 
         if (n < 0 || this.getNoComponents() <= n) {
@@ -96,13 +96,14 @@ export class StringName implements Name {
     }
 
     public insert(n: number, c: string): void {
-        // FIXME string c could have delimiter characters
+        // FIXME: string c could have delimiter characters
         let components: string[] = [];
 
         if (n < 0 || this.getNoComponents() < n) {
             throw new Error("Component index out of bounds");
         }
 
+        // TODO: Use splice, slice and or concat instead of for loop and push
         for (let i = 0; i < n; i++) {
             components.push(this.getComponent(i));
         }
@@ -118,6 +119,7 @@ export class StringName implements Name {
     public append(c: string): void {
         // FIXME string c could have delimiter characters
         this.doIncrementNoComponents();
+        // TODO: Use ? operator
         if (this.getNoComponents() === 0) {
             this.name = c;
         } else {
@@ -131,7 +133,7 @@ export class StringName implements Name {
         if (n < 0 || this.getNoComponents() <= n) {
             throw new Error("Component index out of bounds");
         }
-
+        // TODO: Use splice, slice and or concat instead of for loop and push
         for (let i = 0; i < this.getNoComponents(); i++) {
             if (i !== n) {
                 components.push(this.getComponent(i));
@@ -155,6 +157,7 @@ export class StringName implements Name {
             dataString.replace(ESCAPE_CHARACTER + delimiter, delimiter)
         }
 
+        // TODO: Use ? Operator
         if (this.getNoComponents() === 0) {
             this.name = dataString;
         } else {
@@ -165,6 +168,23 @@ export class StringName implements Name {
     }
 
     // Utility functions
+    // TODO: Use regex for splitting
+    // TODO: Use splice, slice and or concat instead of for loop and push
+    
+    // TODO: Example usage for splitting with regex
+    // https://developer.mozilla.org/de/docs/Web/JavaScript/Reference/Global_Objects/RegExp
+    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Cheatsheet
+    // https://developer.mozilla.org/de/docs/Web/JavaScript/Reference/Global_Objects/RegExp/RegExp
+    public splitRegex(s: string): string[] {
+
+        //const regex = new RegExp('(?<=${ESCAPE_CHARACTER})\\.');
+        const regex = new RegExp('(?<!\\${ESCAPE_CHARACTER})\\.', 'g');
+        //const regex = new RegExp('(?<!\\\\)\\.', 'g');
+
+        
+        return s.split(regex)
+    }
+
 
     private asUnmaskedString(c: string): string {
         let ret = c;
@@ -177,6 +197,7 @@ export class StringName implements Name {
     }
 
     public asComponents(name: string): string[] {
+        // TODO: Use regex for splitting
         let ret: string[] = [];
         let current_component: string = "";
         let is_masked: boolean = false;
@@ -200,6 +221,7 @@ export class StringName implements Name {
 
 
     private countNoComponents(): number {
+        // TODO: Use regex for counting
         let ret = 0;
         let is_masked: boolean = false;
 
