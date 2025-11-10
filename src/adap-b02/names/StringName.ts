@@ -21,7 +21,7 @@ export class StringName implements Name {
             this.special_characters.add(delimiter);
         }
 
-        this.setNoComponents(this.countNoComponents());
+        this.setNoComponents(this.countNoComponents(source));
         this.name = source.slice();
     }
 
@@ -176,12 +176,7 @@ export class StringName implements Name {
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Cheatsheet
     // https://developer.mozilla.org/de/docs/Web/JavaScript/Reference/Global_Objects/RegExp/RegExp
     public splitRegex(s: string): string[] {
-
-        //const regex = new RegExp('(?<=${ESCAPE_CHARACTER})\\.');
-        const regex = new RegExp('(?<!\\${ESCAPE_CHARACTER})\\.', 'g');
-        //const regex = new RegExp('(?<!\\\\)\\.', 'g');
-
-        
+        const regex = new RegExp('(?<!\\\\)\\.', 'g');
         return s.split(regex)
     }
 
@@ -197,45 +192,12 @@ export class StringName implements Name {
     }
 
     public asComponents(name: string): string[] {
-        // TODO: Use regex for splitting
-        let ret: string[] = [];
-        let current_component: string = "";
-        let is_masked: boolean = false;
-
-        for (const n of name) {
-            if (!is_masked && n === this.delimiter) {
-                // it's a real delimiter
-                ret.push(current_component);
-                current_component = "";
-                continue;
-            }
-            if (n === ESCAPE_CHARACTER) {
-                is_masked = !is_masked;
-            }
-            current_component += n;
-        }
-
-        ret.push(current_component);
-        return ret;
+        const regex = new RegExp('(?<!\\\\)\\.', 'g');
+        return name.split(regex);
     }
 
 
-    private countNoComponents(): number {
-        // TODO: Use regex for counting
-        let ret = 0;
-        let is_masked: boolean = false;
-
-        for (const n of this.name) {
-            if (!is_masked && n === this.delimiter) {
-                // it's a real delimiter
-                ret++;
-                continue;
-            }
-            if (n === ESCAPE_CHARACTER) {
-                is_masked = !is_masked;
-            }
-        }
-
-        return ret;
+    public countNoComponents(name: string): number {
+        return this.asComponents(name).length;
     }
 }
