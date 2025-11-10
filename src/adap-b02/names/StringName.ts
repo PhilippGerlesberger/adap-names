@@ -35,6 +35,7 @@ export class StringName implements Name {
      * Users can vary the delimiter character to be used
      */
     public asString(delimiter: string = this.delimiter): string {
+        // FIXME: USE delimiter
         return this.asUnmaskedString(this.name);
     }
 
@@ -78,75 +79,45 @@ export class StringName implements Name {
     }
 
     public setComponent(n: number, c: string): void {
-        // FIXME: string c could have delimiter characters
-        let components: string[] = [];
-
         if (n < 0 || this.getNoComponents() <= n) {
             throw new Error("Component index out of bounds");
         }
+        if (this.countNoComponents(c) != 1) {
+            throw new Error("Component to set must be a single component");
+        }
 
-        components = this.asComponents(this.name);
+        let components = this.asComponents(this.name);
         components[n] = c;
         this.doIncrementNoComponents();
         this.name = components.join(this.delimiter);
     }
 
-    private doIncrementNoComponents(): void {
-        this.noComponents++;
+    private doIncrementNoComponents(n: number = 1): void {
+        this.noComponents += n;
     }
 
     public insert(n: number, c: string): void {
-        // FIXME: string c could have delimiter characters
-        let components: string[] = [];
-
-        if (n < 0 || this.getNoComponents() < n) {
-            throw new Error("Component index out of bounds");
-        }
-
-        // TODO: Use splice, slice and or concat instead of for loop and push
-        for (let i = 0; i < n; i++) {
-            components.push(this.getComponent(i));
-        }
-        components.push(c);
-        for (let i = n; i < this.getNoComponents(); i++) {
-            components.push(this.getComponent(i));
-        }
-
-        this.doIncrementNoComponents();
-        this.name = components.join(this.delimiter);
+        let components = this.asComponents(this.name);
+        components.splice(n, 0, ... this.asComponents(c))
+        this.name = components.join(this.delimiter)
+        this.doIncrementNoComponents(this.countNoComponents(c));
     }
 
     public append(c: string): void {
-        // FIXME string c could have delimiter characters
-        this.doIncrementNoComponents();
-        // TODO: Use ? operator
-        if (this.getNoComponents() === 0) {
-            this.name = c;
-        } else {
-            this.name += this.delimiter + c;
-        }
+        this.doIncrementNoComponents(this.countNoComponents(c));
+        this.name = this.getNoComponents() === 0 ? c : this.name + this.delimiter + c;
     }
 
     public remove(n: number): void {
-        let components: string[] = [];
-
-        if (n < 0 || this.getNoComponents() <= n) {
-            throw new Error("Component index out of bounds");
-        }
-        // TODO: Use splice, slice and or concat instead of for loop and push
-        for (let i = 0; i < this.getNoComponents(); i++) {
-            if (i !== n) {
-                components.push(this.getComponent(i));
-            }
-        }
-
-        this.noComponents--;
+        let components = this.asComponents();
+        components.splice(n, 1)
         this.name = components.join(this.delimiter);
+        this.noComponents--;
     }
 
     public concat(other: Name): void {
-        const delimiter = other.getDelimiterCharacter()
-        let dataString = other.asDataString()
+        const delimiter = other.getDelimiterCharacter();
+        let dataString = other.asDataString();
 
         if (other.getNoComponents() === 0) {
             // Nothing to do
@@ -191,7 +162,7 @@ export class StringName implements Name {
         return ret;
     }
 
-    public asComponents(name: string): string[] {
+    public asComponents(name: string = this.asDataString()): string[] {
         const regex = new RegExp('(?<!\\\\)\\.', 'g');
         return name.split(regex);
     }
