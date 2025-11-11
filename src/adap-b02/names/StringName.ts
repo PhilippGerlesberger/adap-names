@@ -10,15 +10,18 @@ export class StringName implements Name {
     protected delimiter: string = DEFAULT_DELIMITER;
     protected name: string = "";
     protected noComponents: number = 0;
-    private special_characters: Set<string> = new Set([ESCAPE_CHARACTER, DEFAULT_DELIMITER]);
+    private special_characters: Set<string> = new Set([ESCAPE_CHARACTER]);
 
     constructor(source: string, delimiter?: string) {
+        // TODO: refactor 
         if (delimiter) {
             if (delimiter.length !== 1) {
                 throw new Error("Delimiter must be a single character.")
             }
             this.delimiter = delimiter;
             this.special_characters.add(delimiter);
+        } else {
+            this.special_characters.add(DEFAULT_DELIMITER);
         }
 
         this.setNoComponents(this.countNoComponents(source));
@@ -36,7 +39,8 @@ export class StringName implements Name {
      */
     public asString(delimiter: string = this.delimiter): string {
         // FIXME: USE delimiter
-        return this.asUnmaskedString(this.name);
+        //return this.asUnmaskedString(this.name);
+        return this.asComponents().map(c => this.asUnmaskedString(c)).join(delimiter);
     }
 
     /**
@@ -45,7 +49,8 @@ export class StringName implements Name {
      * The special characters in the data string are the default characters
      */
     public asDataString(): string {
-        return this.name;
+        let components = this.asComponents();
+        return components.map(c => this.doPrepareDataString(c)).join(DEFAULT_DELIMITER)
     }
 
     public getDelimiterCharacter(): string {
@@ -119,7 +124,7 @@ export class StringName implements Name {
         const delimiter = other.getDelimiterCharacter();
         let dataString = other.asDataString();
 
-        if (other.getNoComponents() === 0) {
+        if (other.isEmpty()) {
             // Nothing to do
             return
         }
@@ -127,14 +132,7 @@ export class StringName implements Name {
         if (!this.special_characters.has(delimiter)) {
             dataString.replace(ESCAPE_CHARACTER + delimiter, delimiter)
         }
-
-        // TODO: Use ? Operator
-        if (this.getNoComponents() === 0) {
-            this.name = dataString;
-        } else {
-            this.name += this.delimiter + dataString;
-        }
-
+        // FIXME: dataString = cs.fau.de#com,io ; other.delim = "," ; this.delim = "#" -> cs#fau#de\\#com,io
         this.noComponents += other.getNoComponents();
     }
 
@@ -162,9 +160,48 @@ export class StringName implements Name {
         return ret;
     }
 
-    public asComponents(name: string = this.asDataString()): string[] {
-        const regex = new RegExp('(?<!\\\\)\\.', 'g');
-        return name.split(regex);
+    private doPrepareDataString(source: string): string {
+        if (this.delimiter === DEFAULT_DELIMITER) {
+            // nothing to prepare!
+            return source;
+        }
+        if (this.delimiter === ESCAPE_CHARACTER) {
+            // mask only Default Delimiters.
+            return source.replaceAll(DEFAULT_DELIMITER, ESCAPE_CHARACTER + DEFAULT_DELIMITER);
+        } else {
+            // unmask unspecial delimiters and mask Default Delimiters;
+            return source.replaceAll(ESCAPE_CHARACTER + this.delimiter, this.delimiter)
+                         .replaceAll(DEFAULT_DELIMITER, ESCAPE_CHARACTER + DEFAULT_DELIMITER);
+        }
+    }
+
+    public asComponents(name: string = this.name, delimiter: string = this.delimiter): string[] {
+        let result: string[] = [];
+        let component = "";
+        let i = 0;
+        name += "x";
+        let special_characters: Set<string> = new Set([ESCAPE_CHARACTER]);
+        special_characters.add(delimiter);
+
+        while (i < name.length) {
+            if (!special_characters.has(name[i])) {
+                // normal char
+                component += name[i];
+                i++;
+            } else if (name[i] === ESCAPE_CHARACTER && special_characters.has(name[i + 1])) {
+                // it's a masked Special Character
+                component += name[i] + name[i + 1];
+                i += 2;
+            } else {
+                // it's a delimiter!
+                i++;
+                result.push(component);
+                component = "";
+            }
+        }
+
+        result.push(component.slice(0, -1));
+        return result;
     }
 
 
