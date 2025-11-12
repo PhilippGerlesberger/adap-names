@@ -2,6 +2,12 @@ import { DEFAULT_DELIMITER, ESCAPE_CHARACTER } from "../common/Printable";
 import { Name } from "./Name";
 
 
+// TODO: Refactor 
+// 1. Separate source string and data string handling
+// 2. Use only data strings internally and convert source strings to data strings on input
+// 3. Convert data strings to source strings on output
+// 4. This will simplify a lot of code and make it more maintainable
+
 /**
  * String Name class represents a name as a single string
  */
@@ -10,7 +16,7 @@ export class StringName implements Name {
     protected delimiter: string = DEFAULT_DELIMITER;
     protected name: string = "";
     protected noComponents: number = 0;
-    private special_characters: Set<string> = new Set([ESCAPE_CHARACTER]);
+    private special_characters: Set<string> = new Set([ESCAPE_CHARACTER, DEFAULT_DELIMITER]);
 
     constructor(source: string, delimiter?: string) {
         // TODO: refactor 
@@ -18,39 +24,65 @@ export class StringName implements Name {
             if (delimiter.length !== 1) {
                 throw new Error("Delimiter must be a single character.")
             }
-            this.delimiter = delimiter;
-            this.special_characters.add(delimiter);
-        } else {
-            this.special_characters.add(DEFAULT_DELIMITER);
+            this.delimiter = delimiter;  
+        }
+        this.setNoComponents(this.countNoComponents(source));
+        this.name = this.toDataString(source);
+    }
+
+    private toDataString(source: string): string {
+        
+        if (this.delimiter === DEFAULT_DELIMITER) {
+            // source name is already in data string format
+            return source;
         }
 
-        this.setNoComponents(this.countNoComponents(source));
-        this.name = source.slice();
+        let result = "";
+        let isEscaped = false;
+
+        for (let i = 0; i < source.length; i++) {
+            if (isEscaped) {
+                switch (source[i]) {
+                    case ESCAPE_CHARACTER:
+                        result += ESCAPE_CHARACTER + ESCAPE_CHARACTER;
+                        break;    
+                    case this.delimiter:
+                        result += this.delimiter;
+                        break;
+                    default:
+                        throw Error("source is not properly masked.");
+                }
+                isEscaped = false;
+            } else {
+                switch (source[i]) {
+                    case ESCAPE_CHARACTER:
+                        isEscaped = true;
+                        break;    
+                    case this.delimiter:
+                        result += DEFAULT_DELIMITER;
+                        break;
+                    case DEFAULT_DELIMITER:
+                        result += ESCAPE_CHARACTER + DEFAULT_DELIMITER;
+                        break;
+                    default:
+                        result += source[i];
+                        break;
+                }
+            }
+        }
+        return result;
     }
 
     // --------------------------------------------------------------------------------------------
     // String Representations
     // --------------------------------------------------------------------------------------------
 
-    /**
-     * Returns a human-readable representation of the Name instance using user-set special characters
-     * Special characters are not escaped (creating a human-readable string)
-     * Users can vary the delimiter character to be used
-     */
     public asString(delimiter: string = this.delimiter): string {
-        // FIXME: USE delimiter
-        //return this.asUnmaskedString(this.name);
         return this.asComponents().map(c => this.asUnmaskedString(c)).join(delimiter);
     }
 
-    /**
-     * Returns a machine-readable representation of Name instance using default special characters
-     * Machine-readable means that from a data string, a Name can be parsed back in
-     * The special characters in the data string are the default characters
-     */
     public asDataString(): string {
-        let components = this.asComponents();
-        return components.map(c => this.doPrepareDataString(c)).join(DEFAULT_DELIMITER)
+        return this.name;
     }
 
     public getDelimiterCharacter(): string {
@@ -80,7 +112,7 @@ export class StringName implements Name {
         if (x < 0 || this.getNoComponents() < x) {
             throw new Error("Component index out of bounds");
         }
-        return this.asComponents(this.name)[x];
+        return this.toSourceString(this.asComponents()[x]);
     }
 
     public setComponent(n: number, c: string): void {
@@ -91,10 +123,10 @@ export class StringName implements Name {
             throw new Error("Component to set must be a single component");
         }
 
-        let components = this.asComponents(this.name);
-        components[n] = c;
+        let components = this.asComponents();
+        components[n] = this.toDataString(c);
         this.doIncrementNoComponents();
-        this.name = components.join(this.delimiter);
+        this.name = components.join(DEFAULT_DELIMITER);
     }
 
     private doIncrementNoComponents(n: number = 1): void {
@@ -102,51 +134,39 @@ export class StringName implements Name {
     }
 
     public insert(n: number, c: string): void {
-        let components = this.asComponents(this.name);
-        components.splice(n, 0, ... this.asComponents(c))
-        this.name = components.join(this.delimiter)
+        let components = this.asComponents();
+        components.splice(n, 0, ... this.asComponents(c));
+        this.name = components.join(DEFAULT_DELIMITER);
         this.doIncrementNoComponents(this.countNoComponents(c));
     }
 
     public append(c: string): void {
         this.doIncrementNoComponents(this.countNoComponents(c));
-        this.name = this.getNoComponents() === 0 ? c : this.name + this.delimiter + c;
+        this.name = this.getNoComponents() === 0 ? this.toDataString(c) : this.name + this.delimiter + c;
     }
 
     public remove(n: number): void {
         let components = this.asComponents();
         components.splice(n, 1)
-        this.name = components.join(this.delimiter);
+        this.name = components.join(DEFAULT_DELIMITER);
         this.noComponents--;
     }
 
     public concat(other: Name): void {
-        const delimiter = other.getDelimiterCharacter();
         let dataString = other.asDataString();
+        const otherDelimiter = this.getDelimiterCharacter();
 
         if (other.isEmpty()) {
             // Nothing to do
             return
         }
 
-        if (!this.special_characters.has(delimiter)) {
-            dataString.replace(ESCAPE_CHARACTER + delimiter, delimiter)
+        if (otherDelimiter !== this.delimiter) {
+            dataString = dataString.replaceAll(this.delimiter, ESCAPE_CHARACTER + DEFAULT_DELIMITER);
         }
-        // FIXME: dataString = cs.fau.de#com,io ; other.delim = "," ; this.delim = "#" -> cs#fau#de\\#com,io
-        this.noComponents += other.getNoComponents();
-    }
 
-    // Utility functions
-    // TODO: Use regex for splitting
-    // TODO: Use splice, slice and or concat instead of for loop and push
-    
-    // TODO: Example usage for splitting with regex
-    // https://developer.mozilla.org/de/docs/Web/JavaScript/Reference/Global_Objects/RegExp
-    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Cheatsheet
-    // https://developer.mozilla.org/de/docs/Web/JavaScript/Reference/Global_Objects/RegExp/RegExp
-    public splitRegex(s: string): string[] {
-        const regex = new RegExp('(?<!\\\\)\\.', 'g');
-        return s.split(regex)
+        this.doIncrementNoComponents(other.getNoComponents());
+        this.name = this.isEmpty() ? dataString : this.name + DEFAULT_DELIMITER + dataString;
     }
 
 
@@ -160,28 +180,32 @@ export class StringName implements Name {
         return ret;
     }
 
-    private doPrepareDataString(source: string): string {
+    private toSourceString(dataString: string): string {
+        let result: string = "";
+
         if (this.delimiter === DEFAULT_DELIMITER) {
             // nothing to prepare!
-            return source;
+            return dataString;
         }
-        if (this.delimiter === ESCAPE_CHARACTER) {
-            // mask only Default Delimiters.
-            return source.replaceAll(DEFAULT_DELIMITER, ESCAPE_CHARACTER + DEFAULT_DELIMITER);
-        } else {
-            // unmask unspecial delimiters and mask Default Delimiters;
-            return source.replaceAll(ESCAPE_CHARACTER + this.delimiter, this.delimiter)
-                         .replaceAll(DEFAULT_DELIMITER, ESCAPE_CHARACTER + DEFAULT_DELIMITER);
-        }
+        
+        let components = this.asComponents();
+        let tmp = components.map(c => c.replaceAll(ESCAPE_CHARACTER + DEFAULT_DELIMITER, DEFAULT_DELIMITER));
+        tmp = tmp.map(c => c.replaceAll(this.delimiter, ESCAPE_CHARACTER + this.delimiter));
+        result = tmp.join(this.delimiter)
+
+        return result;
     }
 
-    public asComponents(name: string = this.name, delimiter: string = this.delimiter): string[] {
+    public asComponents(source?: string): string[] {
+        // FIXME: Only use this function for data string and build a function to convert back to source string
+        // FIXME: no x at the end!
+        let name = source ? this.toDataString(source) : this.name;
+
         let result: string[] = [];
         let component = "";
         let i = 0;
         name += "x";
-        let special_characters: Set<string> = new Set([ESCAPE_CHARACTER]);
-        special_characters.add(delimiter);
+        let special_characters: Set<string> = new Set([ESCAPE_CHARACTER, DEFAULT_DELIMITER]);
 
         while (i < name.length) {
             if (!special_characters.has(name[i])) {
@@ -204,8 +228,54 @@ export class StringName implements Name {
         return result;
     }
 
-
     public countNoComponents(name: string): number {
         return this.asComponents(name).length;
+    }
+
+    // --------------------------------------------------------------------------------------------
+    // DUMP 
+    // --------------------------------------------------------------------------------------------    
+
+    private toSourceName(dataString: string, delimiter: string): string {
+        // dataString = cs.fau.de#com,io ; other.delim = "," ; this.delim = "#" -> cs#fau#de\\#com,io
+
+        let ret: string = ""
+        const regex = new RegExp("(?<!\\\\)" + delimiter, 'g');
+
+        ret = dataString
+            .replaceAll(this.delimiter, "\\" + this.delimiter)
+            .replaceAll(delimiter, this.delimiter)
+            .replaceAll(regex, delimiter);
+
+
+        return ret;
+    }
+
+    private doPrepareDataString(source: string): string {
+        if (this.delimiter === DEFAULT_DELIMITER) {
+            // nothing to prepare!
+            return source;
+        }
+        if (this.delimiter === ESCAPE_CHARACTER) {
+            // mask only Default Delimiters.
+            return source.replaceAll(DEFAULT_DELIMITER, ESCAPE_CHARACTER + DEFAULT_DELIMITER);
+        } else {
+            // unmask unspecial delimiters and mask Default Delimiters;
+            return source.replaceAll(ESCAPE_CHARACTER + this.delimiter, this.delimiter)
+                         .replaceAll(DEFAULT_DELIMITER, ESCAPE_CHARACTER + DEFAULT_DELIMITER);
+        }
+    }
+
+    // Utility functions
+    // TODO: Use regex for splitting
+    // TODO: Use splice, slice and or concat instead of for loop and push
+    
+    // TODO: Example usage for splitting with regex
+    // https://developer.mozilla.org/de/docs/Web/JavaScript/Reference/Global_Objects/RegExp
+    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Cheatsheet
+    // https://developer.mozilla.org/de/docs/Web/JavaScript/Reference/Global_Objects/RegExp/RegExp
+    public splitRegex(s: string): string[] {
+        const regex = new RegExp('(?<!\\\\)\\.', 'g');
+        return s.split(regex)
     }
 }
