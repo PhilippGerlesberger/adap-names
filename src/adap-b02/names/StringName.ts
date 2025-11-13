@@ -85,6 +85,9 @@ export class StringName implements Name {
     // --------------------------------------------------------------------------------------------
 
     public insert(n: number, c: string): void {
+        if (n < 0 || this.getNoComponents() < n) {
+            throw new Error("Component index out of bounds");
+        }
         let components = this.asDataComponents();
         components.splice(n, 0, ... this.asDataComponents(c));
         this.name = components.join(DEFAULT_DELIMITER);
@@ -104,15 +107,8 @@ export class StringName implements Name {
     }
 
     public concat(other: Name): void {
-        const dataString = other.asDataString();
-
-        if (other.isEmpty()) {
-            // Nothing to do
-            return;
-        }
-
         this.doIncrementNoComponents(other.getNoComponents());
-        this.name = this.isEmpty() ? dataString : this.name + DEFAULT_DELIMITER + dataString;
+        this.name = this.name + DEFAULT_DELIMITER + other.asDataString();
     }
 
     // --------------------------------------------------------------------------------------------
