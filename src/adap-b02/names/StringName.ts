@@ -1,12 +1,7 @@
+import { inherits } from "util";
 import { DEFAULT_DELIMITER, ESCAPE_CHARACTER } from "../common/Printable";
 import { Name } from "./Name";
 
-
-// TODO: Refactor 
-// 1. Separate source string and data string handling
-// 2. Use only data strings internally and convert source strings to data strings on input
-// 3. Convert data strings to source strings on output
-// 4. This will simplify a lot of code and make it more maintainable
 
 /**
  * String Name class represents a name as a single string
@@ -16,10 +11,9 @@ export class StringName implements Name {
     protected delimiter: string = DEFAULT_DELIMITER;
     protected name: string = "";
     protected noComponents: number = 0;
-    private special_characters: Set<string> = new Set([ESCAPE_CHARACTER, DEFAULT_DELIMITER]);
 
     constructor(source: string, delimiter?: string) {
-        // TODO: refactor 
+        
         if (delimiter) {
             if (delimiter.length !== 1) {
                 throw new Error("Delimiter must be a single character.")
@@ -30,6 +24,104 @@ export class StringName implements Name {
         this.name = this.toDataString(source);
     }
 
+    // --------------------------------------------------------------------------------------------
+    // String Representations
+    // --------------------------------------------------------------------------------------------
+
+    public asString(delimiter: string = this.delimiter): string {
+        return this.asDataComponents().map(c => this.asUnmaskedString(c)).join(delimiter);
+    }
+
+    public asDataString(): string {
+        return this.name;
+    }
+
+    public isEmpty(): boolean {
+        return this.name === "";
+    }
+
+    // --------------------------------------------------------------------------------------------
+    // Getter and Setter
+    // --------------------------------------------------------------------------------------------
+
+    public getDelimiterCharacter(): string {
+        return this.delimiter;
+    }
+
+    public getNoComponents(): number {
+        return this.noComponents;
+    }
+
+    // sets number of components
+    private setNoComponents(n: number): void {
+        if (n < 0) {
+            throw new Error("Number of components must be a positive integer");
+        }
+        this.noComponents = n;
+    }
+
+    public getComponent(x: number): string {
+        if (x < 0 || this.getNoComponents() < x) {
+            throw new Error("Component index out of bounds");
+        }
+        return this.toSourceString(this.asDataComponents()[x]);
+    }
+
+    public setComponent(n: number, c: string): void {
+        if (n < 0 || this.getNoComponents() <= n) {
+            throw new Error("Component index out of bounds");
+        }
+        if (this.countNoComponents(c) != 1) {
+            throw new Error("Component to set must be a single component");
+        }
+
+        let components = this.asDataComponents();
+        components[n] = this.toDataString(c);
+        this.name = components.join(DEFAULT_DELIMITER);
+    }
+
+    // --------------------------------------------------------------------------------------------
+    // Modification Functions
+    // --------------------------------------------------------------------------------------------
+
+    public insert(n: number, c: string): void {
+        let components = this.asDataComponents();
+        components.splice(n, 0, ... this.asDataComponents(c));
+        this.name = components.join(DEFAULT_DELIMITER);
+        this.doIncrementNoComponents(this.countNoComponents(c));
+    }
+
+    public append(c: string): void {
+        this.doIncrementNoComponents(this.countNoComponents(c));
+        this.name = this.getNoComponents() === 0 ? this.toDataString(c) : this.name + this.delimiter + c;
+    }
+
+    public remove(n: number): void {
+        let components = this.asDataComponents();
+        components.splice(n, 1)
+        this.name = components.join(DEFAULT_DELIMITER);
+        this.noComponents--;
+    }
+
+    public concat(other: Name): void {
+        const dataString = other.asDataString();
+
+        if (other.isEmpty()) {
+            // Nothing to do
+            return;
+        }
+
+        this.doIncrementNoComponents(other.getNoComponents());
+        this.name = this.isEmpty() ? dataString : this.name + DEFAULT_DELIMITER + dataString;
+    }
+
+    // --------------------------------------------------------------------------------------------
+    // Pricate Utility Functions
+    // --------------------------------------------------------------------------------------------
+
+    // ------------------------ Utility Functions - String representation -------------------------
+
+    // Converts source string to data string format
     private toDataString(source: string): string {
         
         if (this.delimiter === DEFAULT_DELIMITER) {
@@ -73,122 +165,16 @@ export class StringName implements Name {
         return result;
     }
 
-    // --------------------------------------------------------------------------------------------
-    // String Representations
-    // --------------------------------------------------------------------------------------------
-
-    public asString(delimiter: string = this.delimiter): string {
-        return this.asComponents().map(c => this.asUnmaskedString(c)).join(delimiter);
-    }
-
-    public asDataString(): string {
-        return this.name;
-    }
-
-    public getDelimiterCharacter(): string {
-        return this.delimiter;
-    }
-
-    public isEmpty(): boolean {
-        return this.noComponents === 0;
-    }
-
-    // --------------------------------------------------------------------------------------------
-    // Getter and Setter
-    // --------------------------------------------------------------------------------------------
-
-    public getNoComponents(): number {
-        return this.noComponents;
-    }
-
-    private setNoComponents(n: number): void {
-        if (n < 0) {
-            throw new Error("Number of components must be a positive integer");
-        }
-        this.noComponents = n;
-    }
-
-    public getComponent(x: number): string {
-        if (x < 0 || this.getNoComponents() < x) {
-            throw new Error("Component index out of bounds");
-        }
-        return this.toSourceString(this.asComponents()[x]);
-    }
-
-    public setComponent(n: number, c: string): void {
-        if (n < 0 || this.getNoComponents() <= n) {
-            throw new Error("Component index out of bounds");
-        }
-        if (this.countNoComponents(c) != 1) {
-            throw new Error("Component to set must be a single component");
-        }
-
-        let components = this.asComponents();
-        components[n] = this.toDataString(c);
-        this.doIncrementNoComponents();
-        this.name = components.join(DEFAULT_DELIMITER);
-    }
-
-    private doIncrementNoComponents(n: number = 1): void {
-        this.noComponents += n;
-    }
-
-    public insert(n: number, c: string): void {
-        let components = this.asComponents();
-        components.splice(n, 0, ... this.asComponents(c));
-        this.name = components.join(DEFAULT_DELIMITER);
-        this.doIncrementNoComponents(this.countNoComponents(c));
-    }
-
-    public append(c: string): void {
-        this.doIncrementNoComponents(this.countNoComponents(c));
-        this.name = this.getNoComponents() === 0 ? this.toDataString(c) : this.name + this.delimiter + c;
-    }
-
-    public remove(n: number): void {
-        let components = this.asComponents();
-        components.splice(n, 1)
-        this.name = components.join(DEFAULT_DELIMITER);
-        this.noComponents--;
-    }
-
-    public concat(other: Name): void {
-        let dataString = other.asDataString();
-        const otherDelimiter = this.getDelimiterCharacter();
-
-        if (other.isEmpty()) {
-            // Nothing to do
-            return
-        }
-
-        if (otherDelimiter !== this.delimiter) {
-            dataString = dataString.replaceAll(this.delimiter, ESCAPE_CHARACTER + DEFAULT_DELIMITER);
-        }
-
-        this.doIncrementNoComponents(other.getNoComponents());
-        this.name = this.isEmpty() ? dataString : this.name + DEFAULT_DELIMITER + dataString;
-    }
-
-
-    private asUnmaskedString(c: string): string {
-        let ret = c;
-
-        for (const sc of this.special_characters) {
-            ret = ret.replaceAll(ESCAPE_CHARACTER + sc, sc);
-        }
-
-        return ret;
-    }
-
+    // Converts data string to source string format
     private toSourceString(dataString: string): string {
         let result: string = "";
 
         if (this.delimiter === DEFAULT_DELIMITER) {
-            // nothing to prepare!
+            // Source name and data string are identical
             return dataString;
         }
         
-        let components = this.asComponents();
+        let components = this.asDataComponents();
         let tmp = components.map(c => c.replaceAll(ESCAPE_CHARACTER + DEFAULT_DELIMITER, DEFAULT_DELIMITER));
         tmp = tmp.map(c => c.replaceAll(this.delimiter, ESCAPE_CHARACTER + this.delimiter));
         result = tmp.join(this.delimiter)
@@ -196,40 +182,71 @@ export class StringName implements Name {
         return result;
     }
 
-    public asComponents(source?: string): string[] {
-        // FIXME: Only use this function for data string and build a function to convert back to source string
-        // FIXME: no x at the end!
-        let name = source ? this.toDataString(source) : this.name;
+    // Removes escape characters from special characters in data string component
+    // Expects that dataString is a single component and in the correct format
+    private asUnmaskedString(dataString: string): string {
+        let ret = dataString;
 
-        let result: string[] = [];
-        let component = "";
-        let i = 0;
-        name += "x";
-        let special_characters: Set<string> = new Set([ESCAPE_CHARACTER, DEFAULT_DELIMITER]);
-
-        while (i < name.length) {
-            if (!special_characters.has(name[i])) {
-                // normal char
-                component += name[i];
-                i++;
-            } else if (name[i] === ESCAPE_CHARACTER && special_characters.has(name[i + 1])) {
-                // it's a masked Special Character
-                component += name[i] + name[i + 1];
-                i += 2;
-            } else {
-                // it's a delimiter!
-                i++;
-                result.push(component);
-                component = "";
-            }
+        for (const sc of [ESCAPE_CHARACTER, DEFAULT_DELIMITER]) {
+            ret = ret.replaceAll(ESCAPE_CHARACTER + sc, sc);
         }
 
-        result.push(component.slice(0, -1));
+        return ret;
+    }
+
+    // -------------------------- Utility Functions - Components handling -------------------------
+
+    // Converts source string to array of data components
+    private asDataComponents(source: string = this.name): string[] {
+
+        // Source given -> convert source to data string first
+        const dataString = source !== this.name ? this.toDataString(source) : this.name;
+        let result: string[] = [];
+        let component: string = "";
+        let isEscaped: boolean = false;
+
+        // Split dataString by DEFAULT_DELIMITER while respecting escape characters
+        for (let i = 0; i < dataString.length; i++) {
+            if (isEscaped) {
+                switch (dataString[i]) {
+                    case ESCAPE_CHARACTER:
+                        component += ESCAPE_CHARACTER;
+                        break;    
+                    case DEFAULT_DELIMITER:
+                        component += DEFAULT_DELIMITER;
+                        break;
+                    default:
+                        throw Error("source is not properly masked.");
+                }
+                isEscaped = false;
+            } else {
+                switch (dataString[i]) {
+                    case ESCAPE_CHARACTER:
+                        component += ESCAPE_CHARACTER;
+                        isEscaped = true;
+                        break;
+                    case DEFAULT_DELIMITER:
+                        result.push(component);
+                        component = "";
+                        break;
+                    default:
+                        component += dataString[i];
+                        break;
+                }
+            }
+        }
+        result.push(component);
         return result;
     }
 
-    public countNoComponents(name: string): number {
-        return this.asComponents(name).length;
+    // Counts number of components in source string
+    private countNoComponents(name: string): number {
+        return this.asDataComponents(name).length;
+    }
+
+    // Increments number of components by n
+    private doIncrementNoComponents(n: number = 1): void {
+        this.noComponents += n;
     }
 
     // --------------------------------------------------------------------------------------------
