@@ -100,13 +100,18 @@ export class StringName implements Name {
     }
 
     public remove(n: number): void {
+        // FIXME: getNoComponents() = 0 allowed! 
+        if (n < 0 || this.getNoComponents() <= n) {
+            throw new Error("Component index out of bounds");
+        }
         let components = this.asDataComponents();
         components.splice(n, 1)
         this.name = components.join(DEFAULT_DELIMITER);
-        this.noComponents--;
+        this.doDecrementNoComponents();
     }
 
     public concat(other: Name): void {
+        // FIXME: getNoComponents() = 0 allowed!
         this.doIncrementNoComponents(other.getNoComponents());
         this.name = this.name + DEFAULT_DELIMITER + other.asDataString();
     }
@@ -170,7 +175,8 @@ export class StringName implements Name {
             return dataString;
         }
         
-        let components = this.asDataComponents();
+        // TODO: refactor
+        let components = this.asDataComponents(dataString);
         let tmp = components.map(c => c.replaceAll(ESCAPE_CHARACTER + DEFAULT_DELIMITER, DEFAULT_DELIMITER));
         tmp = tmp.map(c => c.replaceAll(this.delimiter, ESCAPE_CHARACTER + this.delimiter));
         result = tmp.join(this.delimiter)
@@ -181,6 +187,7 @@ export class StringName implements Name {
     // Removes escape characters from special characters in data string component
     // Expects that dataString is a single component and in the correct format
     private asUnmaskedString(dataString: string): string {
+        // TODO: refactor
         let ret = dataString;
 
         for (const sc of [ESCAPE_CHARACTER, DEFAULT_DELIMITER]) {
@@ -192,7 +199,7 @@ export class StringName implements Name {
 
     // -------------------------- Utility Functions - Components handling -------------------------
 
-    // Converts source string to array of data components
+    // Converts source string to array of data string components
     private asDataComponents(source: string = this.name): string[] {
 
         // Source given -> convert source to data string first
@@ -243,6 +250,11 @@ export class StringName implements Name {
     // Increments number of components by n
     private doIncrementNoComponents(n: number = 1): void {
         this.noComponents += n;
+    }
+
+    // Decrements number of components
+    private doDecrementNoComponents(): void {
+        this.noComponents--;
     }
 
     // --------------------------------------------------------------------------------------------

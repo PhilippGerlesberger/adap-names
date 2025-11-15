@@ -8,48 +8,31 @@ export class StringArrayName implements Name {
 
     protected delimiter: string = DEFAULT_DELIMITER;
     protected components: string[] = [];
-    private special_characters: Set<string> = new Set([ESCAPE_CHARACTER, DEFAULT_DELIMITER]);
 
     constructor(other: string[], delimiter?: string) {
+        this.initialize(other, delimiter);
+    }
+
+    private initialize(other: string[], delimiter?: string): void {
         if (delimiter) {
             if (delimiter.length !== 1) {
-                throw new Error("Delimiter must be a single character.")
+                throw new Error("Delimiter must be a single character.");
             }
             this.delimiter = delimiter;
-            this.special_characters.add(delimiter);
         }
-        for (let c of other) {
-            if (!this.isProperlyMasked(c)) {
-                throw new Error("Component " + c + " to initialize is not properly masked");
-            }
-        }
-        this.components = other.slice();
+        this.components = other.map(c => this.toDataString(c));
     }
 
     // --------------------------------------------------------------------------------------------
     // String Representations
     // --------------------------------------------------------------------------------------------
 
-    /**
-     * Returns a human-readable representation of the Name instance using user-set special characters
-     * Special characters are not escaped (creating a human-readable string)
-     * Users can vary the delimiter character to be used
-     */
     public asString(delimiter: string = this.delimiter): string {
         return this.components.map(c => this.asUnmaskedString(c)).join(delimiter);
     }
 
-    /** 
-     * Returns a machine-readable representation of Name instance using default special characters
-     * Machine-readable means that from a data string, a Name can be parsed back in
-     * The special characters in the data string are the default characters
-     */
     public asDataString(): string {
-        return this.components.join(this.delimiter);
-    }
-
-    public getDelimiterCharacter(): string {
-        return this.delimiter;
+        return this.components.join(DEFAULT_DELIMITER);
     }
 
     public isEmpty(): boolean {
@@ -60,15 +43,17 @@ export class StringArrayName implements Name {
     // Getters and Setters
     // --------------------------------------------------------------------------------------------
 
+    public getDelimiterCharacter(): string {
+        return this.delimiter;
+    }
+
     /** Returns properly masked component string */
     public getComponent(i: number): string {
-        return this.components[i];
+        return this.toSourceString(this.components[i]);
     }
 
     public setComponent(i: number, c: string): void {
-        if (!this.isProperlyMasked(c)) {
-            throw new Error("Component to set is not properly masked");
-        }
+
         this.components[i] = c;
     }
 
@@ -83,33 +68,32 @@ export class StringArrayName implements Name {
 
     /** Expects that new Name component c is properly masked */
     public insert(i: number, c: string): void {
-        if (i < 0 || i > this.components.length) {
+        if (i < 0 || this.components.length < i) {
             throw new Error("Index to insert is out of bounds");
         }
-        if (!this.isProperlyMasked(c)) {
-            throw new Error("Component to insert is not properly masked");
-        }
-        this.components.splice(i, 0, c);
+        this.components.splice(i, 0, ... this.asDataComponents(c) );
     }
 
     /** Expects that new Name component c is properly masked */
     public append(c: string): void {
-        if (!this.isProperlyMasked(c)) {
-            throw new Error("Component to append is not properly masked");
-        }
-        this.components.push(c);
+        this.components.push( ... this.asDataComponents(c) );
     }
 
     public remove(i: number): void {
-        if (i < 0 || i >= this.components.length) {
+        if (i < 0 || this.components.length <= i) {
             throw new Error("Index to remove is out of bounds");
         }
+        if (this.isEmpty()) {
+            // Nothing to remove
+            return;
+        }
+        // TODO: Decide whether removing the last component should be allowed
         this.components.splice(i, 1);
     }
 
     public concat(other: Name): void {
         for (let i = 0; i < other.getNoComponents(); i++) {
-            this.append(other.getComponent(i))
+            this.components.push(this.toDataString(other.getComponent(i), other.getDelimiterCharacter()));
         }
     }
 
@@ -117,36 +101,116 @@ export class StringArrayName implements Name {
     // Private Masking Utilities
     // --------------------------------------------------------------------------------------------
 
-    private isProperlyMasked(c: string): boolean {
-        let remaining = c;
+    // -------------------------- Utility Functions - Components handling -------------------------
 
-        for (const sc of this.special_characters) {
-            remaining = remaining.replaceAll(ESCAPE_CHARACTER + sc, "");
-        }
+    // Converts source string to array of data components
+    // Expects that source string is properly masked
+    private asDataComponents(source: string, delimiter: string = this.delimiter): string[] {
 
-        for (const r of remaining) {
-            if (this.special_characters.has(r)) {
-                return false;
+        let result: string[] = [];
+        let component: string = "";
+        let isEscaped: boolean = false;
+
+        // Split dataString by DEFAULT_DELIMITER while respecting escape characters
+        for (let i = 0; i < source.length; i++) {
+            if (isEscaped) {
+                switch (source[i]) {
+                    case ESCAPE_CHARACTER:
+                        component += ESCAPE_CHARACTER + ESCAPE_CHARACTER;
+                        break;    
+                    case delimiter:
+                        component += delimiter;
+                        break;
+                    default:
+                        throw Error("source is not properly masked.");
+                }
+                isEscaped = false;
+            } else {
+                switch (source[i]) {
+                    case ESCAPE_CHARACTER:
+                        //component += ESCAPE_CHARACTER;
+                        isEscaped = true;
+                        break;
+                    case delimiter:
+                        result.push(component);
+                        component = "";
+                        break;
+                    case DEFAULT_DELIMITER:
+                        // this happens only if delimiter != DEFAULT_DELIMITER 
+                        // so we need to escape it
+                        component += ESCAPE_CHARACTER + DEFAULT_DELIMITER;
+                        break;
+                    default:
+                        component += source[i];
+                        break;
+                }
             }
         }
-
-        return true;
+        result.push(component);
+        return result;
     }
 
-    private asMaskedString(c: string): string {
-        let ret = c;
+    // ------------------------ Utility Functions - String representation -------------------------
 
-        for (const sc of this.special_characters) {
-            ret = ret.replaceAll(sc, ESCAPE_CHARACTER + sc);
+    // Converts source string to data string format
+    private toDataString(source: string, delimiter: string = this.delimiter): string {
+        
+        if (delimiter === DEFAULT_DELIMITER) {
+            // source name is already in data string format
+            return source;
         }
 
-        return ret;
+        let result = "";
+        let isEscaped = false;
+
+        for (let i = 0; i < source.length; i++) {
+            if (isEscaped) {
+                switch (source[i]) {
+                    case ESCAPE_CHARACTER:
+                        result += ESCAPE_CHARACTER + ESCAPE_CHARACTER;
+                        break;    
+                    case delimiter:
+                        result += delimiter;
+                        break;
+                    default:
+                        throw Error("source is not properly masked.");
+                }
+                isEscaped = false;
+            } else {
+                switch (source[i]) {
+                    case ESCAPE_CHARACTER:
+                        isEscaped = true;
+                        break;
+                    case DEFAULT_DELIMITER:
+                        result += ESCAPE_CHARACTER + DEFAULT_DELIMITER;
+                        break;
+                    case delimiter:
+                        result += DEFAULT_DELIMITER;
+                        break;
+                    default:
+                        result += source[i];
+                        break;
+                }
+            }
+        }
+        return result;
+    }
+
+    // Converts data string to source string format
+    private toSourceString(dataString: string): string {
+        if (this.delimiter === DEFAULT_DELIMITER) {
+            // Source name and data string are identical
+            return dataString;
+        }
+
+        return dataString.replaceAll(ESCAPE_CHARACTER + DEFAULT_DELIMITER, DEFAULT_DELIMITER)
+                         .replaceAll(this.delimiter, ESCAPE_CHARACTER + this.delimiter);
     }
 
     private asUnmaskedString(c: string): string {
         let ret = c;
 
-        for (const sc of this.special_characters) {
+        for (const sc of [ESCAPE_CHARACTER, DEFAULT_DELIMITER]) {
             ret = ret.replaceAll(ESCAPE_CHARACTER + sc, sc);
         }
 
