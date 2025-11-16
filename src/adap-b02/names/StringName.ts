@@ -59,7 +59,7 @@ export class StringName implements Name {
         if (x < 0 || this.getNoComponents() <= x) {
             throw new Error("Component index out of bounds");
         }
-        return this.toSourceString(this.splitDataString()[x]);
+        return this.maskComponent(this.splitDataString()[x]);
     }
 
     public setComponent(n: number, c: string): void {
@@ -146,54 +146,82 @@ export class StringName implements Name {
         let isEscaped = false;
 
         for (let i = 0; i < source.length; i++) {
-            if (isEscaped) {
-                switch (source[i]) {
-                    case ESCAPE_CHARACTER:
-                        result += ESCAPE_CHARACTER + ESCAPE_CHARACTER;
-                        break;    
-                    case this.delimiter:
-                        result += this.delimiter;
-                        break;
-                    default:
-                        throw Error("source is not properly masked.");
+            if (this.delimiter === ESCAPE_CHARACTER) {
+                if (isEscaped) {
+                    switch (source[i]) {
+                        case ESCAPE_CHARACTER:
+                            result += ESCAPE_CHARACTER + ESCAPE_CHARACTER;
+                            break;
+                        case DEFAULT_DELIMITER:
+                            result += DEFAULT_DELIMITER + ESCAPE_CHARACTER + DEFAULT_DELIMITER;
+                            break;
+                        default:
+                            result += DEFAULT_DELIMITER + source[i];
+                    }
+                    isEscaped = false;
+                } else {
+                    switch (source[i]) {
+                        case ESCAPE_CHARACTER:
+                            isEscaped = true;
+                            break;
+                        case DEFAULT_DELIMITER:
+                            result += ESCAPE_CHARACTER + DEFAULT_DELIMITER;
+                            break;
+                        default:
+                            result += source[i];
+                            break;
+                    }
                 }
-                isEscaped = false;
             } else {
-                switch (source[i]) {
-                    case ESCAPE_CHARACTER:
-                        isEscaped = true;
-                        break;    
-                    case this.delimiter:
-                        result += DEFAULT_DELIMITER;
-                        break;
-                    case DEFAULT_DELIMITER:
-                        result += ESCAPE_CHARACTER + DEFAULT_DELIMITER;
-                        break;
-                    default:
-                        result += source[i];
-                        break;
+                if (isEscaped) {    
+                    switch (source[i]) {
+                        case ESCAPE_CHARACTER:
+                            result += ESCAPE_CHARACTER + ESCAPE_CHARACTER;
+                            break;    
+                        case this.delimiter:
+                            result += this.delimiter;
+                            break;
+                        default:
+                            throw Error("source is not properly masked.");
+                    }
+                    isEscaped = false;
+                } else {
+                    switch (source[i]) {
+                        case ESCAPE_CHARACTER:
+                            isEscaped = true;
+                            break;    
+                        case this.delimiter:
+                            result += DEFAULT_DELIMITER;
+                            break;
+                        case DEFAULT_DELIMITER:
+                            result += ESCAPE_CHARACTER + DEFAULT_DELIMITER;
+                            break;
+                        default:
+                            result += source[i];
+                            break;
+                    }
                 }
             }
         }
+
+        if (isEscaped) {
+            throw Error("source is not properly masked.");
+        }
+
         return result;
     }
 
     // Converts data string to source string format
-    private toSourceString(dataString: string): string {
+    private maskComponent(dataString: string): string {
         if (this.delimiter === DEFAULT_DELIMITER) {
             // Source string and data string are identical
             return dataString;
+        } else if (this.delimiter === ESCAPE_CHARACTER) {
+            return dataString.replaceAll(ESCAPE_CHARACTER + DEFAULT_DELIMITER, DEFAULT_DELIMITER);
+        } else {
+            return dataString.replaceAll(ESCAPE_CHARACTER + DEFAULT_DELIMITER, DEFAULT_DELIMITER)
+                             .replaceAll(this.delimiter, ESCAPE_CHARACTER + this.delimiter);
         }
-
-        let result: string = "";
-        const components = this.splitDataString(dataString);
-
-        result = components.map(c =>
-                c.replaceAll(ESCAPE_CHARACTER + DEFAULT_DELIMITER, DEFAULT_DELIMITER)
-                 .replaceAll(this.delimiter, ESCAPE_CHARACTER + this.delimiter)
-        ).join(this.delimiter);
-    
-        return result;
     }
 
     // Removes escape characters from special characters in data string component
