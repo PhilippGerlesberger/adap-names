@@ -13,17 +13,18 @@ export class StringName implements Name {
     protected noComponents: number = 0;
 
     constructor(source: string, delimiter?: string) {
+        this.initialize(source, delimiter);
+    }
 
-        // TODO: initialize
-        
+    private initialize(source: string, delimiter?: string): void {
         if (delimiter) {
             if (delimiter.length !== 1) {
-                throw new Error("Delimiter must be a single character.")
+                throw new Error("Delimiter must be a single character.");
             }
-            this.delimiter = delimiter;  
+            this.delimiter = delimiter;
         }
         this.name = this.toDataString(source);
-        this.setNoComponents(this.countNoComponents(source));
+        this.noComponents = this.countComponents(this.name);
     }
 
     // --------------------------------------------------------------------------------------------
@@ -31,7 +32,7 @@ export class StringName implements Name {
     // --------------------------------------------------------------------------------------------
 
     public asString(delimiter: string = this.delimiter): string {
-        return this.asDataComponents().map(c => this.asUnmaskedString(c)).join(delimiter);
+        return this.splitDataString().map(c => this.unescapeComponent(c)).join(delimiter);
     }
 
     public asDataString(): string {
@@ -39,7 +40,7 @@ export class StringName implements Name {
     }
 
     public isEmpty(): boolean {
-        return this.name === "" && this.noComponents === 0;
+        return this.noComponents === 0;
     }
 
     // --------------------------------------------------------------------------------------------
@@ -54,36 +55,31 @@ export class StringName implements Name {
         return this.noComponents;
     }
 
-    // sets number of components
-    private setNoComponents(n: number): void {
-        if (n < 0) {
-            throw new Error("Number of components must be a positive integer");
-        }
-        this.noComponents = n;
-    }
-
     public getComponent(x: number): string {
-        if (x < 0 || this.getNoComponents() < x) {
+        if (x < 0 || this.getNoComponents() <= x) {
             throw new Error("Component index out of bounds");
         }
-        return this.toSourceString(this.asDataComponents()[x]);
+        return this.toSourceString(this.splitDataString()[x]);
     }
 
     public setComponent(n: number, c: string): void {
         if (n < 0 || this.getNoComponents() <= n) {
             throw new Error("Component index out of bounds");
         }
-        if (this.countNoComponents(c) != 1) {
+
+        const dataString = this.toDataString(c);
+
+        if (this.countComponents(dataString) != 1) {
             throw new Error("Component to set must be a single component");
         }
 
-        let components = this.asDataComponents();
-        components[n] = this.toDataString(c);
+        let components = this.splitDataString();
+        components[n] = dataString;
         this.name = components.join(DEFAULT_DELIMITER);
     }
 
     // --------------------------------------------------------------------------------------------
-    // Modification Functions
+    // Command Methods (Mutators)
     // --------------------------------------------------------------------------------------------
 
     public insert(n: number, c: string): void {
@@ -91,37 +87,37 @@ export class StringName implements Name {
             throw new Error("Component index out of bounds");
         }
 
-        const dataComponents = this.asDataComponents(c);
+        const dataString = this.toDataString(c);
+        const dataComponents = this.splitDataString(dataString);
         
         if (this.isEmpty()) {
-            this.name = this.toDataString(c);
+            this.name = dataString;
         } else {
-            let components = this.asDataComponents();
+            let components = this.splitDataString();
             components.splice(n, 0, ... dataComponents);
             this.name = components.join(DEFAULT_DELIMITER);
         }
 
-        this.doIncrementNoComponents(dataComponents.length);
+        this.incrementNoComponents(dataComponents.length);
     }
 
     public append(c: string): void {
         const dataString = this.toDataString(c);
         this.name = this.isEmpty() ? dataString : this.name + DEFAULT_DELIMITER + dataString;
-        this.doIncrementNoComponents(this.countNoComponents(c));
+        this.incrementNoComponents(this.countComponents(dataString));
     }
 
     public remove(n: number): void {
         if (n < 0 || this.getNoComponents() <= n) {
             throw new Error("Component index out of bounds");
         }
-        let components = this.asDataComponents();
+        let components = this.splitDataString();
         components.splice(n, 1)
         this.name = components.join(DEFAULT_DELIMITER);
-        this.doDecrementNoComponents();
+        this.decrementNoComponents();
     }
 
     public concat(other: Name): void {
-        
         if (other.isEmpty()) {
             // Nothing to concat
             return;
@@ -130,7 +126,7 @@ export class StringName implements Name {
         const otherDataString = other.asDataString();
 
         this.name = this.isEmpty() ? otherDataString : this.name + DEFAULT_DELIMITER + otherDataString;
-        this.doIncrementNoComponents(other.getNoComponents());
+        this.incrementNoComponents(other.getNoComponents());
     }
 
     // --------------------------------------------------------------------------------------------
@@ -141,7 +137,6 @@ export class StringName implements Name {
 
     // Converts source string to data string format
     private toDataString(source: string): string {
-        
         if (this.delimiter === DEFAULT_DELIMITER) {
             // source name is already in data string format
             return source;
@@ -185,42 +180,36 @@ export class StringName implements Name {
 
     // Converts data string to source string format
     private toSourceString(dataString: string): string {
-        let result: string = "";
-
         if (this.delimiter === DEFAULT_DELIMITER) {
             // Source string and data string are identical
             return dataString;
         }
-        
-        // TODO: refactor FIXME: Theres a bug, dataString will be parsed twice! No test case catches this!
-        let components = this.asDataComponents(dataString);
-        let tmp = components.map(c => c.replaceAll(ESCAPE_CHARACTER + DEFAULT_DELIMITER, DEFAULT_DELIMITER));
-        tmp = tmp.map(c => c.replaceAll(this.delimiter, ESCAPE_CHARACTER + this.delimiter));
-        result = tmp.join(this.delimiter)
 
+        let result: string = "";
+        const components = this.splitDataString(dataString);
+
+        result = components.map(c =>
+                c.replaceAll(ESCAPE_CHARACTER + DEFAULT_DELIMITER, DEFAULT_DELIMITER)
+                 .replaceAll(this.delimiter, ESCAPE_CHARACTER + this.delimiter)
+        ).join(this.delimiter);
+    
         return result;
     }
 
     // Removes escape characters from special characters in data string component
     // Expects that dataString is a single component and in the correct format
-    private asUnmaskedString(dataString: string): string {
-        // TODO: refactor
-        let ret = dataString;
-
-        for (const sc of [ESCAPE_CHARACTER, DEFAULT_DELIMITER]) {
-            ret = ret.replaceAll(ESCAPE_CHARACTER + sc, sc);
-        }
-
-        return ret;
+    private unescapeComponent(dataString: string): string {
+        return dataString.replaceAll(ESCAPE_CHARACTER + ESCAPE_CHARACTER, ESCAPE_CHARACTER)
+                         .replaceAll(ESCAPE_CHARACTER + DEFAULT_DELIMITER, DEFAULT_DELIMITER);
     }
 
     // -------------------------- Utility Functions - Components handling -------------------------
 
-    // Converts source string to array of data string components
-    private asDataComponents(source: string = this.name): string[] {
+    // Converts data string to array of data string components
+    private splitDataString(dataString: string = this.name): string[] {
 
         // Source given -> convert source to data string first
-        const dataString = source !== this.name ? this.toDataString(source) : this.name;
+        //const dataString = source !== this.name ? this.toDataString(source) : this.name;
         let result: string[] = [];
         let component: string = "";
         let isEscaped: boolean = false;
@@ -259,65 +248,18 @@ export class StringName implements Name {
         return result;
     }
 
-    // Counts number of components in source string
-    private countNoComponents(name: string): number {
-        return this.asDataComponents(name).length;
+    // Counts number of components in data string
+    private countComponents(dataString: string): number {
+        return this.splitDataString(dataString).length;
     }
 
     // Increments number of components by n
-    private doIncrementNoComponents(n: number = 1): void {
+    private incrementNoComponents(n: number = 1): void {
         this.noComponents += n;
     }
 
     // Decrements number of components
-    private doDecrementNoComponents(): void {
+    private decrementNoComponents(): void {
         this.noComponents--;
-    }
-
-    // --------------------------------------------------------------------------------------------
-    // DUMP 
-    // --------------------------------------------------------------------------------------------    
-
-    private toSourceName(dataString: string, delimiter: string): string {
-        // dataString = cs.fau.de#com,io ; other.delim = "," ; this.delim = "#" -> cs#fau#de\\#com,io
-
-        let ret: string = ""
-        const regex = new RegExp("(?<!\\\\)" + delimiter, 'g');
-
-        ret = dataString
-            .replaceAll(this.delimiter, "\\" + this.delimiter)
-            .replaceAll(delimiter, this.delimiter)
-            .replaceAll(regex, delimiter);
-
-
-        return ret;
-    }
-
-    private doPrepareDataString(source: string): string {
-        if (this.delimiter === DEFAULT_DELIMITER) {
-            // nothing to prepare!
-            return source;
-        }
-        if (this.delimiter === ESCAPE_CHARACTER) {
-            // mask only Default Delimiters.
-            return source.replaceAll(DEFAULT_DELIMITER, ESCAPE_CHARACTER + DEFAULT_DELIMITER);
-        } else {
-            // unmask unspecial delimiters and mask Default Delimiters;
-            return source.replaceAll(ESCAPE_CHARACTER + this.delimiter, this.delimiter)
-                         .replaceAll(DEFAULT_DELIMITER, ESCAPE_CHARACTER + DEFAULT_DELIMITER);
-        }
-    }
-
-    // Utility functions
-    // TODO: Use regex for splitting
-    // TODO: Use splice, slice and or concat instead of for loop and push
-    
-    // TODO: Example usage for splitting with regex
-    // https://developer.mozilla.org/de/docs/Web/JavaScript/Reference/Global_Objects/RegExp
-    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Cheatsheet
-    // https://developer.mozilla.org/de/docs/Web/JavaScript/Reference/Global_Objects/RegExp/RegExp
-    public splitRegex(s: string): string[] {
-        const regex = new RegExp('(?<!\\\\)\\.', 'g');
-        return s.split(regex)
     }
 }

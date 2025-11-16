@@ -28,7 +28,7 @@ export class StringArrayName implements Name {
     // --------------------------------------------------------------------------------------------
 
     public asString(delimiter: string = this.delimiter): string {
-        return this.components.map(c => this.asUnmaskedString(c)).join(delimiter);
+        return this.components.map(c => this.unescapeComponent(c)).join(delimiter);
     }
 
     public asDataString(): string {
@@ -47,19 +47,24 @@ export class StringArrayName implements Name {
         return this.delimiter;
     }
 
+    /** Returns number of components in Name instance */
+     public getNoComponents(): number {
+        return this.components.length;
+    }
+
     /** Returns properly masked component string */
     public getComponent(i: number): string {
+        if (i < 0 || this.getNoComponents() <= i) {
+            throw new Error("Component index out of bounds");
+        }
         return this.toSourceString(this.components[i]);
     }
 
     public setComponent(i: number, c: string): void {
-
+        if (i < 0 || this.getNoComponents() <= i) {
+            throw new Error("Component index out of bounds");
+        }
         this.components[i] = c;
-    }
-
-     /** Returns number of components in Name instance */
-     public getNoComponents(): number {
-        return this.components.length;
     }
 
     // --------------------------------------------------------------------------------------------
@@ -71,23 +76,18 @@ export class StringArrayName implements Name {
         if (i < 0 || this.components.length < i) {
             throw new Error("Index to insert is out of bounds");
         }
-        this.components.splice(i, 0, ... this.asDataComponents(c) );
+        this.components.splice(i, 0, ... this.splitSourceIntoDataComponents(c));
     }
 
     /** Expects that new Name component c is properly masked */
     public append(c: string): void {
-        this.components.push( ... this.asDataComponents(c) );
+        this.components.push( ... this.splitSourceIntoDataComponents(c));
     }
 
     public remove(i: number): void {
         if (i < 0 || this.components.length <= i) {
             throw new Error("Index to remove is out of bounds");
         }
-        if (this.isEmpty()) {
-            // Nothing to remove
-            return;
-        }
-        // TODO: Decide whether removing the last component should be allowed
         this.components.splice(i, 1);
     }
 
@@ -105,8 +105,7 @@ export class StringArrayName implements Name {
 
     // Converts source string to array of data components
     // Expects that source string is properly masked
-    private asDataComponents(source: string, delimiter: string = this.delimiter): string[] {
-
+    private splitSourceIntoDataComponents(source: string, delimiter: string = this.delimiter): string[] {
         let result: string[] = [];
         let component: string = "";
         let isEscaped: boolean = false;
@@ -122,7 +121,12 @@ export class StringArrayName implements Name {
                         component += delimiter;
                         break;
                     default:
-                        throw Error("source is not properly masked.");
+                        if (delimiter === ESCAPE_CHARACTER) {
+                            component += DEFAULT_DELIMITER + source[i];
+                        } else {
+                            throw Error("source is not properly masked.");
+                        }
+                        break;
                 }
                 isEscaped = false;
             } else {
@@ -173,7 +177,12 @@ export class StringArrayName implements Name {
                         result += delimiter;
                         break;
                     default:
-                        throw Error("source is not properly masked.");
+                        if (delimiter === ESCAPE_CHARACTER) {
+                            result += DEFAULT_DELIMITER + source[i];
+                        } else {
+                            throw Error("source is not properly masked.");
+                        }
+                        break;
                 }
                 isEscaped = false;
             } else {
@@ -207,13 +216,10 @@ export class StringArrayName implements Name {
                          .replaceAll(this.delimiter, ESCAPE_CHARACTER + this.delimiter);
     }
 
-    private asUnmaskedString(c: string): string {
-        let ret = c;
-
-        for (const sc of [ESCAPE_CHARACTER, DEFAULT_DELIMITER]) {
-            ret = ret.replaceAll(ESCAPE_CHARACTER + sc, sc);
-        }
-
-        return ret;
+    // Removes escape characters from special characters in data string component
+    // Expects that dataString is a single component and in the correct format
+    private unescapeComponent(dataString: string): string {
+        return dataString.replaceAll(ESCAPE_CHARACTER + ESCAPE_CHARACTER, ESCAPE_CHARACTER)
+                         .replaceAll(ESCAPE_CHARACTER + DEFAULT_DELIMITER, DEFAULT_DELIMITER);
     }
 }
