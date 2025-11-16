@@ -13,6 +13,8 @@ export class StringName implements Name {
     protected noComponents: number = 0;
 
     constructor(source: string, delimiter?: string) {
+
+        // TODO: initialize
         
         if (delimiter) {
             if (delimiter.length !== 1) {
@@ -20,8 +22,8 @@ export class StringName implements Name {
             }
             this.delimiter = delimiter;  
         }
-        this.setNoComponents(this.countNoComponents(source));
         this.name = this.toDataString(source);
+        this.setNoComponents(this.countNoComponents(source));
     }
 
     // --------------------------------------------------------------------------------------------
@@ -37,7 +39,7 @@ export class StringName implements Name {
     }
 
     public isEmpty(): boolean {
-        return this.name === "";
+        return this.name === "" && this.noComponents === 0;
     }
 
     // --------------------------------------------------------------------------------------------
@@ -88,19 +90,27 @@ export class StringName implements Name {
         if (n < 0 || this.getNoComponents() < n) {
             throw new Error("Component index out of bounds");
         }
-        let components = this.asDataComponents();
-        components.splice(n, 0, ... this.asDataComponents(c));
-        this.name = components.join(DEFAULT_DELIMITER);
-        this.doIncrementNoComponents(this.countNoComponents(c));
+
+        const dataComponents = this.asDataComponents(c);
+        
+        if (this.isEmpty()) {
+            this.name = this.toDataString(c);
+        } else {
+            let components = this.asDataComponents();
+            components.splice(n, 0, ... dataComponents);
+            this.name = components.join(DEFAULT_DELIMITER);
+        }
+
+        this.doIncrementNoComponents(dataComponents.length);
     }
 
     public append(c: string): void {
+        const dataString = this.toDataString(c);
+        this.name = this.isEmpty() ? dataString : this.name + DEFAULT_DELIMITER + dataString;
         this.doIncrementNoComponents(this.countNoComponents(c));
-        this.name = this.getNoComponents() === 0 ? this.toDataString(c) : this.name + this.delimiter + c;
     }
 
     public remove(n: number): void {
-        // FIXME: getNoComponents() = 0 allowed! 
         if (n < 0 || this.getNoComponents() <= n) {
             throw new Error("Component index out of bounds");
         }
@@ -111,13 +121,20 @@ export class StringName implements Name {
     }
 
     public concat(other: Name): void {
-        // FIXME: getNoComponents() = 0 allowed!
+        
+        if (other.isEmpty()) {
+            // Nothing to concat
+            return;
+        }
+
+        const otherDataString = other.asDataString();
+
+        this.name = this.isEmpty() ? otherDataString : this.name + DEFAULT_DELIMITER + otherDataString;
         this.doIncrementNoComponents(other.getNoComponents());
-        this.name = this.name + DEFAULT_DELIMITER + other.asDataString();
     }
 
     // --------------------------------------------------------------------------------------------
-    // Pricate Utility Functions
+    // Private Utility Functions
     // --------------------------------------------------------------------------------------------
 
     // ------------------------ Utility Functions - String representation -------------------------
@@ -171,11 +188,11 @@ export class StringName implements Name {
         let result: string = "";
 
         if (this.delimiter === DEFAULT_DELIMITER) {
-            // Source name and data string are identical
+            // Source string and data string are identical
             return dataString;
         }
         
-        // TODO: refactor
+        // TODO: refactor FIXME: Theres a bug, dataString will be parsed twice! No test case catches this!
         let components = this.asDataComponents(dataString);
         let tmp = components.map(c => c.replaceAll(ESCAPE_CHARACTER + DEFAULT_DELIMITER, DEFAULT_DELIMITER));
         tmp = tmp.map(c => c.replaceAll(this.delimiter, ESCAPE_CHARACTER + this.delimiter));
