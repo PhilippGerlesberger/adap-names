@@ -1,71 +1,62 @@
 import { DEFAULT_DELIMITER, ESCAPE_CHARACTER } from "../common/Printable";
 import { Name } from "./Name";
 import { AbstractName } from "./AbstractName";
+import { Parser } from "../parser/Parser";
+import { NameParser } from "../parser/NameParser";
 
 export class StringName extends AbstractName {
-
     protected name: string = "";
     protected noComponents: number = 0;
+    
 
     constructor(source: string, delimiter?: string) {
-        super();
-        throw new Error("needs implementation or deletion");
-    }
-
-    public clone(): Name {
-        throw new Error("needs implementation or deletion");
-    }
-
-    public asString(delimiter: string = this.delimiter): string {
-        throw new Error("needs implementation or deletion");
-    }
-
-    public asDataString(): string {
-        throw new Error("needs implementation or deletion");
-    }
-
-    public isEqual(other: Name): boolean {
-        throw new Error("needs implementation or deletion");
-    }
-
-    public getHashCode(): number {
-        throw new Error("needs implementation or deletion");
-    }
-
-    public isEmpty(): boolean {
-        throw new Error("needs implementation or deletion");
-    }
-
-    public getDelimiterCharacter(): string {
-        throw new Error("needs implementation or deletion");
+        super(delimiter);
+        this.name = source;
+        this.noComponents = this.nameParser.split(source).length;
     }
 
     public getNoComponents(): number {
-        throw new Error("needs implementation or deletion");
+        return this.noComponents;
     }
 
-    public getComponent(i: number): string {
-        throw new Error("needs implementation or deletion");
+    protected doGetComponent(i: number): string {
+        const components = this.nameParser.split(this.name);
+        return components[i];
     }
 
-    public setComponent(i: number, c: string) {
-        throw new Error("needs implementation or deletion");
+    protected doSetComponent(i: number, c: string): void {
+        const delimiter = this.getDelimiterCharacter();
+        let components = this.nameParser.split(this.name);
+        components[i] = c;
+        this.name = components.join(delimiter);
+    }
+  
+    protected doInsert(i: number, c: string): void {
+        let components = this.nameParser.split(this.name);
+        components.splice(i, 0, c);
+        this.name = components.join(this.delimiter);
+        this.incrementNoComponents();
     }
 
-    public insert(i: number, c: string) {
-        throw new Error("needs implementation or deletion");
+    public append(c: string): void {
+        this.name = this.isEmpty() ? c : this.name + this.delimiter + c;
+        this.incrementNoComponents();
     }
 
-    public append(c: string) {
-        throw new Error("needs implementation or deletion");
+    protected doRemove(n: number): void {
+        let components = this.nameParser.split(this.name);
+        components.splice(n, 1)
+        this.name = components.join(this.delimiter);
+        this.decrementNoComponents();
     }
 
-    public remove(i: number) {
-        throw new Error("needs implementation or deletion");
+    // Increments number of components by n
+    private incrementNoComponents(): void {
+        this.noComponents++;
     }
 
-    public concat(other: Name): void {
-        throw new Error("needs implementation or deletion");
-    }
-
+    // Decrements number of components
+    private decrementNoComponents(): void {
+        this.noComponents--;
+    }  
 }
