@@ -31,9 +31,12 @@ export interface Parser {
      *
      * @param component The input string.
      * @param toDelimiter The target delimiter.
+     * @param fromDelimiter (optional) The source delimiter the component is masked with.
+     *                      Defaults to this.delimiter. Use this parameter if the component
+     *                      originates from a different delimiter context.
      * @returns The remasked component.
      */
-    remask(component: string, toDelimiter: string): string;
+    remask(component: string, toDelimiter: string, fromDelimiter?: string): string;
 
     /**
      * Splits a string into components using the current delimiter,
