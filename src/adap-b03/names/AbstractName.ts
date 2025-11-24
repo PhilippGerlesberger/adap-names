@@ -22,7 +22,7 @@ export abstract class AbstractName implements Name {
     }
 
     // --------------------------------------------------------------------------------------------
-    // String Representaions / Printable
+    // Printable Interface
     // --------------------------------------------------------------------------------------------
 
     public asString(delimiter: string = this.delimiter): string {
@@ -98,12 +98,12 @@ export abstract class AbstractName implements Name {
 
     protected abstract doSetComponent(i: number, c: string): void;
 
+    // ------------------------------------ Mutation Methods --------------------------------------
+
     public insert(i: number, c: string): void {
         this.assertIndexInclusive(i);
         this.doInsert(i, c);
     }
-
-    // ------------------------------------ Mutation Methods --------------------------------------
 
     protected abstract doInsert(i: number, c: string): void;
 
