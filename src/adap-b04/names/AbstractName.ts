@@ -1,3 +1,4 @@
+import { Z_NO_COMPRESSION } from "zlib";
 import { IllegalArgumentException } from "../common/IllegalArgumentException";
 import { InvalidStateException } from "../common/InvalidStateException";
 import { MethodFailedException } from "../common/MethodFailedException";
@@ -53,7 +54,9 @@ export abstract class AbstractName implements Name {
 
     public asDataString(): string {
         let dataComponents: string[] = [];
-        for (let i = 0; i < this.getNoComponents(); i++) {
+        const noComponents = this.getNoComponents();
+        MethodFailedException.assert(this.isValidNoComponents(noComponents));
+        for (let i = 0; i < noComponents; i++) {
             const dataComponent = this.nameParser.remask(this.getComponent(i), DEFAULT_DELIMITER);
             dataComponents.push(dataComponent);
         }
@@ -90,8 +93,9 @@ export abstract class AbstractName implements Name {
     // --------------------------------------------------------------------------------------------
 
     public isEmpty(): boolean {
-        // TODO: Postcondition: valid no of components
-        return this.getNoComponents() === 0;
+        const noComponents = this.getNoComponents();
+        MethodFailedException.assert(this.isValidNoComponents(noComponents));
+        return noComponents === 0;
     }
 
     // ------------------------------------ Getter and Setter -------------------------------------
@@ -159,6 +163,10 @@ export abstract class AbstractName implements Name {
 
     private isValidDelimiter(delimiter: string) {
         return delimiter.length === 1;
+    }
+
+    private isValidNoComponents(noComponents: number): boolean {
+        return 0 <= noComponents;
     }
 
     /**
