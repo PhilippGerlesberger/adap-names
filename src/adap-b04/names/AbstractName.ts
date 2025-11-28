@@ -1,4 +1,3 @@
-import { Z_NO_COMPRESSION } from "zlib";
 import { IllegalArgumentException } from "../common/IllegalArgumentException";
 import { InvalidStateException } from "../common/InvalidStateException";
 import { MethodFailedException } from "../common/MethodFailedException";
@@ -6,6 +5,12 @@ import { DEFAULT_DELIMITER, ESCAPE_CHARACTER } from "../common/Printable";
 import { NameParser } from "../parser/NameParser";
 import { Parser } from "../parser/Parser";
 import { Name } from "./Name";
+
+
+const DATA: number = 0;
+const MASKED: number = 1;
+const UNMASKED: number = 2;
+
 
 export abstract class AbstractName implements Name {
 
@@ -38,13 +43,19 @@ export abstract class AbstractName implements Name {
 
     public asString(delimiter: string = this.delimiter): string {
         IllegalArgumentException.assert(this.isValidDelimiter(delimiter));
+
         let unmaskComponents: string[] = [];
+
         for (let i = 0; i < this.getNoComponents(); i++) {
             const unmaskComponent = this.nameParser.unmask(this.getComponent(i));
             unmaskComponents.push(unmaskComponent);
+            // TODO: Postcondition? 
         }
-        // TODO: Class invariant: valid unmask string?
-        return unmaskComponents.join(delimiter);
+
+        const result: string = unmaskComponents.join(delimiter);
+        InvalidStateException.assert(this.isValidString(result, UNMASKED));
+
+        return result;
     }
 
     public toString(): string {
@@ -56,12 +67,17 @@ export abstract class AbstractName implements Name {
         let dataComponents: string[] = [];
         const noComponents = this.getNoComponents();
         MethodFailedException.assert(this.isValidNoComponents(noComponents));
+
         for (let i = 0; i < noComponents; i++) {
             const dataComponent = this.nameParser.remask(this.getComponent(i), DEFAULT_DELIMITER);
             dataComponents.push(dataComponent);
+            // TODO: Postcondition?
         }
-        // TODO: class invariant: valid data string?
-        return dataComponents.join(DEFAULT_DELIMITER);
+
+        const result: string = dataComponents.join(DEFAULT_DELIMITER);
+        InvalidStateException.assert(this.isValidString(result, DATA));
+
+        return result;
     }
 
     // --------------------------------------------------------------------------------------------
@@ -94,7 +110,8 @@ export abstract class AbstractName implements Name {
 
     public isEmpty(): boolean {
         const noComponents = this.getNoComponents();
-        MethodFailedException.assert(this.isValidNoComponents(noComponents));
+        InvalidStateException.assert(this.isValidNoComponents(noComponents));
+
         return noComponents === 0;
     }
 
@@ -117,8 +134,14 @@ export abstract class AbstractName implements Name {
 
     public setComponent(i: number, c: string): void {
         IllegalArgumentException.assert(this.isValidIndexExclusive(i));
+        IllegalArgumentException.assert(this.isValidString(c, MASKED));
+
         this.doSetComponent(i, c);
-        // TODO: Class invarianz: valid component
+        // TODO: Postcondition?
+        const newC: string = this.doGetComponent(i);
+        InvalidStateException.assert(this.isValidString(newC, UNMASKED));
+
+        MethodFailedException.assert(newC == c);
     }
 
     protected abstract doSetComponent(i: number, c: string): void;
@@ -127,8 +150,19 @@ export abstract class AbstractName implements Name {
 
     public insert(i: number, c: string): void {
         IllegalArgumentException.assert(this.isValidIndexInclusive(i));
+        IllegalArgumentException.assert(this.isValidString(c, MASKED));
+
+        const oldNoComponents: number = this.getNoComponents();
+        InvalidStateException.assert(this.isValidNoComponents(oldNoComponents));
+
         this.doInsert(i, c);
-        // TODO: Class invarianz: valid string
+
+        const newNoComponents: number = this.getNoComponents();
+        InvalidStateException.assert(this.isValidNoComponents(newNoComponents));
+
+        MethodFailedException.assert(oldNoComponents + 1 == newNoComponents);
+        const newC: string = this.doGetComponent(i);
+        MethodFailedException.assert(newC == c);
     }
 
     protected abstract doInsert(i: number, c: string): void;
@@ -137,24 +171,48 @@ export abstract class AbstractName implements Name {
 
     public remove(i: number): void {
         IllegalArgumentException.assert(this.isValidIndexExclusive(i));
+
+        const oldNoComponents: number = this.getNoComponents();
+        InvalidStateException.assert(this.isValidNoComponents(oldNoComponents));
+
         this.doRemove(i);
-        // TODO: Class invarianz: valid string
+
+        const newNoComponents: number = this.getNoComponents();
+        InvalidStateException.assert(this.isValidNoComponents(newNoComponents));
+
+        MethodFailedException.assert(this.isValidRemove(oldNoComponents, newNoComponents));
     }
 
     protected abstract doRemove(i: number): void;
 
     public concat(other: Name): void {
         // TODO: Precondition: Check Name
-        for (let i = 0; i < other.getNoComponents(); i++) {
-            const otherComponent = other.getComponent(i);
-            // TODO: Postcondtion: valid component
-            const otherDelimiter = other.getDelimiterCharacter();
-            // TODO: Postcondtion: valid delim
+        const oldNoComponents: number = this.getNoComponents();
+        InvalidStateException.assert(this.isValidNoComponents(oldNoComponents));
+        const otherNoComponents: number = other.getNoComponents();
+        InvalidStateException.assert(this.isValidNoComponents(otherNoComponents));
+        const otherDelimiter = other.getDelimiterCharacter();
+        InvalidStateException.assert(this.isValidDelimiter(otherDelimiter));
+
+        for (let i = 0; i < otherNoComponents; i++) {
+            const otherComponent: string = other.getComponent(i);
+            InvalidStateException.assert(this.isValidString(otherComponent, MASKED))
+    
             const component = this.nameParser.remask(otherComponent, this.delimiter, otherDelimiter)
-            // TODO: Postcondtion: valid component
+            IllegalArgumentException.assert(this.isValidString(component, MASKED))
+            
             this.append(component);
-            // TODO: Class invarianz: valid string
+
+            const currentComponent: string = this.getComponent(oldNoComponents + i + 1);
+            InvalidStateException.assert(this.isValidString(currentComponent, MASKED));
+
+            MethodFailedException.assert(currentComponent == otherComponent);
         }
+
+        const newNoComponents: number = this.getNoComponents();
+        InvalidStateException.assert(this.isValidNoComponents(newNoComponents));
+
+        MethodFailedException.assert(newNoComponents == oldNoComponents + otherNoComponents);
     }
 
     // --------------------------------------------------------------------------------------------
@@ -169,6 +227,13 @@ export abstract class AbstractName implements Name {
         return 0 <= noComponents;
     }
 
+    private isValidRemove(oldNoComponents: number, newNoComponents: number): boolean {
+        if (oldNoComponents == 0 && newNoComponents == 0) {
+            return true;
+        }
+        return oldNoComponents - 1 == newNoComponents;
+    }
+
     /**
      * Asserts that the index is within existing component boundaries.
      * Valid range: 0 <= i < getNoComponents().
@@ -178,6 +243,23 @@ export abstract class AbstractName implements Name {
      */
     private isValidIndexExclusive(idx: number): boolean {
         return 0 <= idx && idx < this.getNoComponents();
+    }
+
+    // FIXME:!!!
+    private isValidString(name: string, type: number): boolean {
+        switch(type) {
+            case DATA:
+                return true;
+                break;
+            case MASKED:
+                return true;
+                break;
+            case UNMASKED:
+                return true;
+                break;
+            default:
+                throw new Error("Invalid type")        
+        }
     }
     
     /**
