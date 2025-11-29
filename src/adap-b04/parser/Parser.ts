@@ -48,4 +48,8 @@ export interface Parser {
      * @returns The parsed components.
      */
     split(source: string): string[];
+
+    isProperlyMasked(name: string, delimiter: string, isComponent?: boolean): boolean;
+
+    isProperlyUnmasked(unmaskedComponent: string, maskedComponent: string): boolean;
 }
