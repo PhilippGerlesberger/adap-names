@@ -3,6 +3,9 @@ import { Name } from "./Name";
 import { AbstractName } from "./AbstractName";
 import { Parser } from "../parser/Parser";
 import { NameParser } from "../parser/NameParser";
+import { MethodFailedException } from "../common/MethodFailedException";
+import { InvalidStateException } from "../common/InvalidStateException";
+import { IllegalArgumentException } from "../common/IllegalArgumentException";
 
 export class StringName extends AbstractName {
     protected name: string = "";
@@ -11,11 +14,24 @@ export class StringName extends AbstractName {
 
     constructor(source: string, delimiter?: string) {
         super(delimiter);
+        IllegalArgumentException.assert(this.nameParser.isProperlyMasked(
+            source,
+            this.getDelimiterCharacter()
+        ))
         this.name = source;
         this.noComponents = this.nameParser.split(source).length;
+        InvalidStateException.assert(this.isValidNoComponents(this.noComponents));
+
+        MethodFailedException.assert(this.name == source);
     }
 
     public getNoComponents(): number {
+        const noComponents: number = this.doGetNoComponents();
+        MethodFailedException.assert(this.isValidNoComponents(noComponents));
+        return noComponents;
+    }
+
+    protected doGetNoComponents(): number {
         return this.noComponents;
     }
 
@@ -39,6 +55,11 @@ export class StringName extends AbstractName {
     }
 
     public append(c: string): void {
+        IllegalArgumentException.assert(this.nameParser.isProperlyMasked(
+            c,
+            this.getDelimiterCharacter(),
+            true
+        ))
         this.name = this.isEmpty() ? c : this.name + this.delimiter + c;
         this.incrementNoComponents();
     }
