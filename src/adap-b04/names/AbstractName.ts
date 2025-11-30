@@ -14,9 +14,10 @@ export abstract class AbstractName implements Name {
     constructor(delimiter: string = DEFAULT_DELIMITER) {
         IllegalArgumentException.assert(this.isValidDelimiter(delimiter));
         this.delimiter = delimiter;
-        this.nameParser = new NameParser(delimiter);
+        const nameParser = new NameParser();
+        InvalidStateException.assert(nameParser != null);
+        this.nameParser = nameParser;
 
-        // TODO: Class invariant: nameParser
         const newDelimiter = this.getDelimiterCharacter();
         InvalidStateException.assert(this.isValidDelimiter(newDelimiter));
 
@@ -24,10 +25,17 @@ export abstract class AbstractName implements Name {
     }
 
     public clone(): Name {
-        const clone = Object.create(Object.getPrototypeOf(this));
-        // TODO: Postcondition: Name object created?
-        // TODO: Class invarianz: check clone (isEqual, hashcode?)
-        return Object.assign(clone, this);
+        const proto = Object.create(Object.getPrototypeOf(this));
+        const clone: Name = Object.assign(proto, this) as Name;
+        
+
+        InvalidStateException.assert(this.isValidDelimiter(clone.getDelimiterCharacter()));
+        InvalidStateException.assert(this.isValidNoComponents(clone.getNoComponents()))
+
+        MethodFailedException.assert(clone.isEqual(this));
+        MethodFailedException.assert(clone.getHashCode() == this.getHashCode());
+        MethodFailedException.assert(clone !== this);
+        return clone as Name;
         
     }
 
@@ -46,8 +54,8 @@ export abstract class AbstractName implements Name {
             const maskedComponent = this.getComponent(i);
             InvalidStateException.assert(this.nameParser.isProperlyMasked(maskedComponent, delimiter, true));
 
-            const unmaskComponent = this.nameParser.unmask(this.getComponent(i));
-            MethodFailedException.assert(this.nameParser.isProperlyUnmasked(unmaskComponent, maskedComponent));
+            const unmaskComponent = this.nameParser.unmask(this.getComponent(i), delimiter);
+            MethodFailedException.assert(this.nameParser.isProperlyUnmasked(unmaskComponent, maskedComponent, delimiter));
 
             unmaskComponents.push(unmaskComponent);
         }
@@ -67,9 +75,7 @@ export abstract class AbstractName implements Name {
     public asDataString(): string {
         let dataComponents: string[] = [];
         const noComponents = this.getNoComponents();
-        MethodFailedException.assert(this.isValidNoComponents(noComponents));
-
-        // TODO: no delimiter needed
+        InvalidStateException.assert(this.isValidNoComponents(noComponents));
         const delimiter = this.getDelimiterCharacter();
         InvalidStateException.assert(this.isValidDelimiter(delimiter));
 
@@ -77,7 +83,7 @@ export abstract class AbstractName implements Name {
             const component = this.getComponent(i);
             InvalidStateException.assert(this.nameParser.isProperlyMasked(component, delimiter, true));
 
-            const dataComponent = this.nameParser.remask(this.getComponent(i), DEFAULT_DELIMITER);
+            const dataComponent = this.nameParser.remask(this.getComponent(i), DEFAULT_DELIMITER, delimiter);
             MethodFailedException.assert(this.nameParser.isProperlyMasked(dataComponent, DEFAULT_DELIMITER, true));
 
             dataComponents.push(dataComponent);
@@ -93,7 +99,8 @@ export abstract class AbstractName implements Name {
     // --------------------------------------------------------------------------------------------
 
     public isEqual(other: Name): boolean {
-        // TODO: Precondition: valid other Name?   
+        IllegalArgumentException.assert(other != null);
+
         return this.asDataString() === other.asDataString() &&
                this.getDelimiterCharacter() === other.getDelimiterCharacter() &&
                this.getNoComponents() == other.getNoComponents();
@@ -127,15 +134,28 @@ export abstract class AbstractName implements Name {
     // ------------------------------------ Getter and Setter -------------------------------------
 
     public getDelimiterCharacter(): string {
-        // TODO: Precondition valid delim
+        const delimiter = this.doGetDelimiterCharacter();
+        MethodFailedException.assert(this.isValidDelimiter(delimiter));
+
+        return delimiter;
+    }
+
+    protected doGetDelimiterCharacter(): string {
         return this.delimiter;
     }
 
-    abstract getNoComponents(): number;
+    public getNoComponents(): number {
+        const noComponents: number = this.doGetNoComponents();
+        MethodFailedException.assert(this.isValidNoComponents(noComponents));
+
+        return noComponents;
+    }
+
+    protected abstract doGetNoComponents(): number;
 
     public getComponent(i: number): string {
         IllegalArgumentException.assert(this.isValidIndexExclusive(i));
-        // TODO: Class invarianz: valid component
+        const component = this.doGetComponent(i);
         return this.doGetComponent(i);
     }
 
@@ -180,7 +200,22 @@ export abstract class AbstractName implements Name {
 
     protected abstract doInsert(i: number, c: string): void;
 
-    abstract append(c: string): void;
+    public append(c: string) {
+        const oldNoComponents: number = this.getNoComponents();
+        InvalidStateException.assert(this.isValidNoComponents(oldNoComponents));
+        
+        this.doAppend(c);
+
+        const newNoComponents: number = this.getNoComponents();
+        InvalidStateException.assert(this.isValidNoComponents(newNoComponents));
+        const newComponent: string = this.getComponent(newNoComponents - 1);
+        InvalidStateException.assert(this.nameParser.isProperlyMasked(newComponent, this.getDelimiterCharacter(), true));
+
+        MethodFailedException.assert(oldNoComponents + 1 == newNoComponents);
+        MethodFailedException.assert(c == newComponent);
+    }
+
+    protected abstract doAppend(c: string): void;
 
     public remove(i: number): void {
         IllegalArgumentException.assert(this.isValidIndexExclusive(i));
@@ -199,14 +234,15 @@ export abstract class AbstractName implements Name {
     protected abstract doRemove(i: number): void;
 
     public concat(other: Name): void {
-        // TODO: Precondition: Check Name
+        IllegalArgumentException.assert(other != null);
         const oldNoComponents: number = this.getNoComponents();
-        InvalidStateException.assert(this.isValidNoComponents(oldNoComponents));
         const otherNoComponents: number = other.getNoComponents();
-        InvalidStateException.assert(this.isValidNoComponents(otherNoComponents));
         const otherDelimiter = other.getDelimiterCharacter();
-        InvalidStateException.assert(this.isValidDelimiter(otherDelimiter));
         const thisDelimiter = this.getDelimiterCharacter();
+
+        InvalidStateException.assert(this.isValidNoComponents(oldNoComponents));
+        InvalidStateException.assert(this.isValidNoComponents(otherNoComponents));
+        InvalidStateException.assert(this.isValidDelimiter(otherDelimiter));
         InvalidStateException.assert(this.isValidDelimiter(thisDelimiter));
 
         for (let i = 0; i < otherNoComponents; i++) {
@@ -216,7 +252,7 @@ export abstract class AbstractName implements Name {
             const component = this.nameParser.remask(otherComponent, thisDelimiter, otherDelimiter)
             InvalidStateException.assert(this.nameParser.isProperlyMasked(component, thisDelimiter, true));
             
-            this.append(component);
+            this.doAppend(component);
 
             const currentComponent: string = this.getComponent(oldNoComponents + i);
             InvalidStateException.assert(this.nameParser.isProperlyMasked(currentComponent, thisDelimiter, true));
