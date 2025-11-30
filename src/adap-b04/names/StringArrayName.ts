@@ -11,6 +11,7 @@ export class StringArrayName extends AbstractName {
 
     constructor(source: string[], delimiter?: string) {
         super(delimiter);
+        // TODO: isProperlyMasked for arrays.
         IllegalArgumentException.assert(this.nameParser.isProperlyMasked(
             source.join(this.getDelimiterCharacter()),
             this.getDelimiterCharacter()
@@ -19,15 +20,7 @@ export class StringArrayName extends AbstractName {
         MethodFailedException.assert(this.checkArrays(this.components, source));
     }
 
-    public getNoComponents(): number {
-        // TODO: in abstract class + doGetNoComponents
-        const noComponents: number = this.doGetNoComponents();
-        MethodFailedException.assert(this.isValidNoComponents(noComponents));
-
-        return noComponents;
-    }
-
-    private doGetNoComponents(): number {
+    protected doGetNoComponents(): number {
         return this.components.length;
     }
 
@@ -43,22 +36,8 @@ export class StringArrayName extends AbstractName {
         this.components.splice(i, 0, c);
     }
 
-    public append(c: string) {
-        // TODO: in abstract class + doAppend
-        IllegalArgumentException.assert(this.nameParser.isProperlyMasked(c, this.getDelimiterCharacter(), true));
-
-        const oldNoComponents: number = this.getNoComponents();
-        InvalidStateException.assert(this.isValidNoComponents(oldNoComponents));
-        
+    protected doAppend(c: string) {
         this.components.push(c);
-
-        const newNoComponents: number = this.getNoComponents();
-        InvalidStateException.assert(this.isValidNoComponents(newNoComponents));
-        const newComponent: string = this.getComponent(newNoComponents - 1);
-        InvalidStateException.assert(this.nameParser.isProperlyMasked(newComponent, this.getDelimiterCharacter(), true));
-
-        MethodFailedException.assert(oldNoComponents + 1 == newNoComponents);
-        MethodFailedException.assert(c == newComponent);
     }
 
     protected doRemove(i: number) {

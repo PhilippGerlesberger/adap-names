@@ -19,16 +19,10 @@ export class StringName extends AbstractName {
             this.getDelimiterCharacter()
         ))
         this.name = source;
-        this.noComponents = this.nameParser.split(source).length;
+        this.noComponents = this.nameParser.split(source, this.getDelimiterCharacter()).length;
         InvalidStateException.assert(this.isValidNoComponents(this.noComponents));
 
         MethodFailedException.assert(this.name == source);
-    }
-
-    public getNoComponents(): number {
-        const noComponents: number = this.doGetNoComponents();
-        MethodFailedException.assert(this.isValidNoComponents(noComponents));
-        return noComponents;
     }
 
     protected doGetNoComponents(): number {
@@ -36,36 +30,30 @@ export class StringName extends AbstractName {
     }
 
     protected doGetComponent(i: number): string {
-        const components = this.nameParser.split(this.name);
+        const components = this.nameParser.split(this.name, this.delimiter);
         return components[i];
     }
 
     protected doSetComponent(i: number, c: string): void {
-        const delimiter = this.getDelimiterCharacter();
-        let components = this.nameParser.split(this.name);
+        let components = this.nameParser.split(this.name, this.delimiter);
         components[i] = c;
-        this.name = components.join(delimiter);
+        this.name = components.join(this.delimiter);
     }
-  
+
     protected doInsert(i: number, c: string): void {
-        let components = this.nameParser.split(this.name);
+        let components = this.nameParser.split(this.name, this.delimiter);
         components.splice(i, 0, c);
         this.name = components.join(this.delimiter);
         this.incrementNoComponents();
     }
 
-    public append(c: string): void {
-        IllegalArgumentException.assert(this.nameParser.isProperlyMasked(
-            c,
-            this.getDelimiterCharacter(),
-            true
-        ))
+    protected doAppend(c: string): void {
         this.name = this.isEmpty() ? c : this.name + this.delimiter + c;
         this.incrementNoComponents();
     }
 
     protected doRemove(n: number): void {
-        let components = this.nameParser.split(this.name);
+        let components = this.nameParser.split(this.name, this.delimiter);
         components.splice(n, 1)
         this.name = components.join(this.delimiter);
         this.decrementNoComponents();
