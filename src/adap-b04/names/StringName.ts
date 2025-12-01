@@ -1,11 +1,13 @@
 import { DEFAULT_DELIMITER, ESCAPE_CHARACTER } from "../common/Printable";
 import { Name } from "./Name";
-import { AbstractName } from "./AbstractName";
+import { AbstractName} from "./AbstractName";
 import { Parser } from "../parser/Parser";
 import { NameParser } from "../parser/NameParser";
 import { MethodFailedException } from "../common/MethodFailedException";
 import { InvalidStateException } from "../common/InvalidStateException";
 import { IllegalArgumentException } from "../common/IllegalArgumentException";
+import { Exception } from "../common/Exception";
+import { ExceptionType } from "../common/ExceptionType";
 
 export class StringName extends AbstractName {
     protected name: string = "";
@@ -20,8 +22,7 @@ export class StringName extends AbstractName {
         ))
         this.name = source;
         this.noComponents = this.nameParser.split(source, this.getDelimiterCharacter()).length;
-        InvalidStateException.assert(this.isValidNoComponents(this.noComponents));
-
+        this.assertIsValidNoComponents(this.noComponents, ExceptionType.CLASS_INVARIANT);
         MethodFailedException.assert(this.name == source);
     }
 

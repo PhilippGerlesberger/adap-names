@@ -5,6 +5,8 @@ import { DEFAULT_DELIMITER, ESCAPE_CHARACTER } from "../common/Printable";
 import { NameParser } from "../parser/NameParser";
 import { Parser } from "../parser/Parser";
 import { Name } from "./Name";
+import { ExceptionType } from "../common/ExceptionType";
+
 
 export abstract class AbstractName implements Name {
 
@@ -26,17 +28,16 @@ export abstract class AbstractName implements Name {
 
     public clone(): Name {
         const proto = Object.create(Object.getPrototypeOf(this));
-        const clone: Name = Object.assign(proto, this) as Name;
-        
+        const clone: Name = Object.assign(proto, this) as Name;    
 
         InvalidStateException.assert(this.isValidDelimiter(clone.getDelimiterCharacter()));
-        InvalidStateException.assert(this.isValidNoComponents(clone.getNoComponents()))
+        this.assertIsValidNoComponents(clone.getNoComponents(), ExceptionType.CLASS_INVARIANT);
 
         MethodFailedException.assert(clone.isEqual(this));
         MethodFailedException.assert(clone.getHashCode() == this.getHashCode());
         MethodFailedException.assert(clone !== this);
+    
         return clone as Name;
-        
     }
 
     // --------------------------------------------------------------------------------------------
@@ -48,7 +49,7 @@ export abstract class AbstractName implements Name {
 
         let unmaskComponents: string[] = [];
         const noComponents = this.getNoComponents();
-        InvalidStateException.assert(this.isValidNoComponents(noComponents));
+        this.assertIsValidNoComponents(noComponents, ExceptionType.CLASS_INVARIANT);
 
         for (let i = 0; i < noComponents; i++) {
             const maskedComponent = this.getComponent(i);
@@ -75,7 +76,7 @@ export abstract class AbstractName implements Name {
     public asDataString(): string {
         let dataComponents: string[] = [];
         const noComponents = this.getNoComponents();
-        InvalidStateException.assert(this.isValidNoComponents(noComponents));
+        this.assertIsValidNoComponents(noComponents, ExceptionType.CLASS_INVARIANT);
         const delimiter = this.getDelimiterCharacter();
         InvalidStateException.assert(this.isValidDelimiter(delimiter));
 
@@ -116,7 +117,7 @@ export abstract class AbstractName implements Name {
             hashCode = (hashCode << 5) - hashCode + c;
             hashCode |= 0;
         }
-        // TODO: Class invarianz
+        MethodFailedException.assert(this.isValidHashCode(hashCode));
         return hashCode;
     }
 
@@ -126,7 +127,8 @@ export abstract class AbstractName implements Name {
 
     public isEmpty(): boolean {
         const noComponents = this.getNoComponents();
-        InvalidStateException.assert(this.isValidNoComponents(noComponents));
+        this.assertIsValidNoComponents(noComponents, ExceptionType.CLASS_INVARIANT);
+        
 
         return noComponents === 0;
     }
@@ -146,7 +148,7 @@ export abstract class AbstractName implements Name {
 
     public getNoComponents(): number {
         const noComponents: number = this.doGetNoComponents();
-        MethodFailedException.assert(this.isValidNoComponents(noComponents));
+        this.assertIsValidNoComponents(noComponents, ExceptionType.CLASS_INVARIANT);
 
         return noComponents;
     }
@@ -154,15 +156,22 @@ export abstract class AbstractName implements Name {
     protected abstract doGetNoComponents(): number;
 
     public getComponent(i: number): string {
-        IllegalArgumentException.assert(this.isValidIndexExclusive(i));
+        this.assertIsValidIndexExclusive(i, ExceptionType.PRECONDITION);
+
+        const delimiter = this.getDelimiterCharacter();
+        InvalidStateException.assert(this.isValidDelimiter(delimiter));
+        
         const component = this.doGetComponent(i);
-        return this.doGetComponent(i);
+
+        InvalidStateException.assert(this.nameParser.isProperlyMasked(component, delimiter, true));
+
+        return component;
     }
 
     protected abstract doGetComponent(i: number): string;
 
     public setComponent(i: number, c: string): void {
-        IllegalArgumentException.assert(this.isValidIndexExclusive(i));
+        this.assertIsValidIndexInclusive(i, ExceptionType.PRECONDITION);
         const delimiter = this.getDelimiterCharacter();
         InvalidStateException.assert(this.isValidDelimiter(delimiter));
         IllegalArgumentException.assert(this.nameParser.isProperlyMasked(c, delimiter, true));
@@ -180,18 +189,18 @@ export abstract class AbstractName implements Name {
     // ------------------------------------ Mutation Methods --------------------------------------
 
     public insert(i: number, c: string): void {
-        IllegalArgumentException.assert(this.isValidIndexInclusive(i));
+        this.assertIsValidIndexInclusive(i, ExceptionType.PRECONDITION);
         const delimiter = this.getDelimiterCharacter();
         InvalidStateException.assert(this.isValidDelimiter(delimiter));
         IllegalArgumentException.assert(this.nameParser.isProperlyMasked(c, delimiter, true));
 
         const oldNoComponents: number = this.getNoComponents();
-        InvalidStateException.assert(this.isValidNoComponents(oldNoComponents));
+        this.assertIsValidNoComponents(oldNoComponents, ExceptionType.CLASS_INVARIANT);
 
         this.doInsert(i, c);
 
         const newNoComponents: number = this.getNoComponents();
-        InvalidStateException.assert(this.isValidNoComponents(newNoComponents));
+        this.assertIsValidNoComponents(newNoComponents, ExceptionType.CLASS_INVARIANT);
 
         MethodFailedException.assert(oldNoComponents + 1 == newNoComponents);
         const newC: string = this.doGetComponent(i);
@@ -201,15 +210,19 @@ export abstract class AbstractName implements Name {
     protected abstract doInsert(i: number, c: string): void;
 
     public append(c: string) {
+        const delimiter = this.getDelimiterCharacter();
+        InvalidStateException.assert(this.isValidDelimiter(delimiter));
+        IllegalArgumentException.assert(this.nameParser.isProperlyMasked(c, delimiter, true));
+
         const oldNoComponents: number = this.getNoComponents();
-        InvalidStateException.assert(this.isValidNoComponents(oldNoComponents));
+        this.assertIsValidNoComponents(oldNoComponents, ExceptionType.CLASS_INVARIANT);
         
         this.doAppend(c);
 
         const newNoComponents: number = this.getNoComponents();
-        InvalidStateException.assert(this.isValidNoComponents(newNoComponents));
+        this.assertIsValidNoComponents(newNoComponents, ExceptionType.CLASS_INVARIANT);
         const newComponent: string = this.getComponent(newNoComponents - 1);
-        InvalidStateException.assert(this.nameParser.isProperlyMasked(newComponent, this.getDelimiterCharacter(), true));
+        InvalidStateException.assert(this.nameParser.isProperlyMasked(newComponent, delimiter, true));
 
         MethodFailedException.assert(oldNoComponents + 1 == newNoComponents);
         MethodFailedException.assert(c == newComponent);
@@ -218,15 +231,15 @@ export abstract class AbstractName implements Name {
     protected abstract doAppend(c: string): void;
 
     public remove(i: number): void {
-        IllegalArgumentException.assert(this.isValidIndexExclusive(i));
+        this.assertIsValidIndexExclusive(i, ExceptionType.PRECONDITION);
 
         const oldNoComponents: number = this.getNoComponents();
-        InvalidStateException.assert(this.isValidNoComponents(oldNoComponents));
+        this.assertIsValidNoComponents(oldNoComponents, ExceptionType.CLASS_INVARIANT);
 
         this.doRemove(i);
 
         const newNoComponents: number = this.getNoComponents();
-        InvalidStateException.assert(this.isValidNoComponents(newNoComponents));
+        this.assertIsValidNoComponents(newNoComponents, ExceptionType.CLASS_INVARIANT);
 
         MethodFailedException.assert(this.isValidRemove(oldNoComponents, newNoComponents));
     }
@@ -235,13 +248,14 @@ export abstract class AbstractName implements Name {
 
     public concat(other: Name): void {
         IllegalArgumentException.assert(other != null);
+
         const oldNoComponents: number = this.getNoComponents();
         const otherNoComponents: number = other.getNoComponents();
         const otherDelimiter = other.getDelimiterCharacter();
         const thisDelimiter = this.getDelimiterCharacter();
 
-        InvalidStateException.assert(this.isValidNoComponents(oldNoComponents));
-        InvalidStateException.assert(this.isValidNoComponents(otherNoComponents));
+        this.assertIsValidNoComponents(oldNoComponents, ExceptionType.CLASS_INVARIANT);
+        this.assertIsValidNoComponents(otherNoComponents, ExceptionType.CLASS_INVARIANT);
         InvalidStateException.assert(this.isValidDelimiter(otherDelimiter));
         InvalidStateException.assert(this.isValidDelimiter(thisDelimiter));
 
@@ -261,7 +275,7 @@ export abstract class AbstractName implements Name {
         }
 
         const newNoComponents: number = this.getNoComponents();
-        InvalidStateException.assert(this.isValidNoComponents(newNoComponents));
+        this.assertIsValidNoComponents(newNoComponents, ExceptionType.CLASS_INVARIANT);
 
         MethodFailedException.assert(newNoComponents == oldNoComponents + otherNoComponents);
     }
@@ -270,40 +284,88 @@ export abstract class AbstractName implements Name {
     // Utility Functions
     // --------------------------------------------------------------------------------------------
 
+    private isValidHashCode(c: number): boolean {
+        const intMin32: number = -(2**31);
+        const intMax32: number = 2**31 - 1;
+        
+        return intMin32 <= c && c <= intMax32;
+    }
+
     protected isValidDelimiter(delimiter: string) {
         return delimiter.length === 1;
     }
 
-    protected isValidNoComponents(noComponents: number): boolean {
-        return 0 <= noComponents;
+    protected assertIsValidNoComponents(noComponents: number, et: ExceptionType): void {
+        return this.assertIsPositivInteger(noComponents, et);
+    }
+
+    protected assertIsValidIndexExclusive(idx: number, et: ExceptionType): void {
+        const noComponents = this.doGetNoComponents();
+        switch (et) {
+            case ExceptionType.PRECONDITION:
+                IllegalArgumentException.assert(idx < noComponents);
+                break;
+
+            case ExceptionType.CLASS_INVARIANT:
+                InvalidStateException.assert(idx < noComponents);
+                break;
+
+            case ExceptionType.POSTCONDITION:
+                MethodFailedException.assert(idx < noComponents);
+                break;
+            
+            default:
+                throw new Error("error");
+        }
+
+        this.assertIsPositivInteger(idx,et);
+    }
+
+    protected assertIsValidIndexInclusive(idx: number, et: ExceptionType): void {
+        const noComponents = this.doGetNoComponents();
+        switch (et) {
+            case ExceptionType.PRECONDITION:
+                IllegalArgumentException.assert(idx <= noComponents);
+                break;
+
+            case ExceptionType.CLASS_INVARIANT:
+                InvalidStateException.assert(idx <= noComponents);
+                break;
+
+            case ExceptionType.POSTCONDITION:
+                MethodFailedException.assert(idx <= noComponents);
+                break;
+            
+            default:
+                throw new Error("error");
+        }
+
+        this.assertIsPositivInteger(idx,et);
+    }
+
+    protected assertIsPositivInteger(noComponents: number, et: ExceptionType): void {
+        switch (et) {
+            case ExceptionType.PRECONDITION:
+                IllegalArgumentException.assert(Number.isFinite(noComponents));
+                IllegalArgumentException.assert(Number.isInteger(noComponents));
+                IllegalArgumentException.assert(0 <= noComponents);
+                break;
+            case ExceptionType.CLASS_INVARIANT:
+                InvalidStateException.assert(Number.isFinite(noComponents));
+                InvalidStateException.assert(Number.isInteger(noComponents));
+                InvalidStateException.assert(0 <= noComponents);
+                break;
+            case ExceptionType.POSTCONDITION:
+                MethodFailedException.assert(Number.isFinite(noComponents));
+                MethodFailedException.assert(Number.isInteger(noComponents));
+                MethodFailedException.assert(0 <= noComponents);
+                break;
+            default:
+                throw new Error("error");
+        }
     }
 
     protected isValidRemove(oldNoComponents: number, newNoComponents: number): boolean {
-        if (oldNoComponents == 0 && newNoComponents == 0) {
-            return true;
-        }
         return oldNoComponents - 1 == newNoComponents;
-    }
-
-    /**
-     * Asserts that the index is within existing component boundaries.
-     * Valid range: 0 <= i < getNoComponents().
-     *
-     * @param i The index to check.
-     * @throws Error if the index is out of bounds.
-     */
-    protected isValidIndexExclusive(idx: number): boolean {
-        return 0 <= idx && idx < this.getNoComponents();
-    }
-    
-    /**
-     * Asserts that the index is valid for insertion.
-     * Valid range: 0 <= i <= getNoComponents().
-     *
-     * @param i The index to check.
-     * @throws Error if the index is out of bounds.
-     */
-    protected isValidIndexInclusive(i: number): boolean {
-        return 0 <= i && i <= this.getNoComponents();
     }
 }
