@@ -1,71 +1,72 @@
 import { DEFAULT_DELIMITER, ESCAPE_CHARACTER } from "../common/Printable";
 import { Name } from "./Name";
-import { AbstractName } from "./AbstractName";
+import { AbstractName} from "./AbstractName";
+import { Parser } from "../parser/Parser";
+import { NameParser } from "../parser/NameParser";
+import { MethodFailedException } from "../common/MethodFailedException";
+import { InvalidStateException } from "../common/InvalidStateException";
+import { IllegalArgumentException } from "../common/IllegalArgumentException";
+import { Exception } from "../common/Exception";
+import { ExceptionType } from "../common/ExceptionType";
 
 export class StringName extends AbstractName {
-
     protected name: string = "";
     protected noComponents: number = 0;
+    
 
     constructor(source: string, delimiter?: string) {
-        super();
-        throw new Error("needs implementation or deletion");
+        super(delimiter);
+        IllegalArgumentException.assert(this.nameParser.isProperlyMasked(
+            source,
+            this.getDelimiterCharacter()
+        ))
+        this.name = source;
+        this.noComponents = this.nameParser.split(source, this.getDelimiterCharacter()).length;
+        this.assertIsValidNoComponents(this.noComponents, ExceptionType.CLASS_INVARIANT);
+        MethodFailedException.assert(this.name == source);
     }
 
-    public clone(): Name {
-        throw new Error("needs implementation or deletion");
+    protected doGetNoComponents(): number {
+        return this.noComponents;
     }
 
-    public asString(delimiter: string = this.delimiter): string {
-        throw new Error("needs implementation or deletion");
+    protected doGetComponent(i: number): string {
+        const components = this.nameParser.split(this.name, this.delimiter);
+        return components[i];
     }
 
-    public asDataString(): string {
-        throw new Error("needs implementation or deletion");
+    protected doSetComponent(i: number, c: string): void {
+        let components = this.nameParser.split(this.name, this.delimiter);
+        components[i] = c;
+        this.name = components.join(this.delimiter);
     }
 
-    public isEqual(other: Name): boolean {
-        throw new Error("needs implementation or deletion");
+    protected doInsert(i: number, c: string): void {
+        let components = this.nameParser.split(this.name, this.delimiter);
+        components.splice(i, 0, c);
+        this.name = components.join(this.delimiter);
+        this.incrementNoComponents();
     }
 
-    public getHashCode(): number {
-        throw new Error("needs implementation or deletion");
+    protected doAppend(c: string): void {
+        this.name = this.isEmpty() ? c : this.name + this.delimiter + c;
+        this.incrementNoComponents();
     }
 
-    public isEmpty(): boolean {
-        throw new Error("needs implementation or deletion");
+    protected doRemove(n: number): void {
+        let components = this.nameParser.split(this.name, this.delimiter);
+        components.splice(n, 1)
+        this.name = components.join(this.delimiter);
+        this.decrementNoComponents();
     }
 
-    public getDelimiterCharacter(): string {
-        throw new Error("needs implementation or deletion");
+    // Increments number of components by n
+    private incrementNoComponents(): void {
+        this.noComponents++;
     }
 
-    public getNoComponents(): number {
-        throw new Error("needs implementation or deletion");
-    }
-
-    public getComponent(i: number): string {
-        throw new Error("needs implementation or deletion");
-    }
-
-    public setComponent(i: number, c: string) {
-        throw new Error("needs implementation or deletion");
-    }
-
-    public insert(i: number, c: string) {
-        throw new Error("needs implementation or deletion");
-    }
-
-    public append(c: string) {
-        throw new Error("needs implementation or deletion");
-    }
-
-    public remove(i: number) {
-        throw new Error("needs implementation or deletion");
-    }
-
-    public concat(other: Name): void {
-        throw new Error("needs implementation or deletion");
-    }
-
+    // Decrements number of components
+    private decrementNoComponents(): void {
+        this.noComponents--;
+    }  
 }
