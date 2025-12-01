@@ -5,27 +5,22 @@ import { MethodFailedException } from "../common/MethodFailedException";
 
 
 export class NameParser implements Parser {
-    protected delimiter;
 
-    constructor(delimiter: string) {
-        IllegalArgumentException.assert(this.isValidDelimiter(delimiter));
-        this.delimiter = delimiter;
-    }
-
-    public mask(component: string): string {
+    public mask(component: string, delimiter: string): string {
         throw new Error("Method not implemented.");
     }
 
-    public unmask(component: string): string {
-        if (this.delimiter === ESCAPE_CHARACTER) {
+    public unmask(component: string, delimiter: string): string {
+        // TODO: Preconditions
+        if (delimiter === ESCAPE_CHARACTER) {
             return component.replaceAll(ESCAPE_CHARACTER + ESCAPE_CHARACTER, ESCAPE_CHARACTER);
         } else {
             return component.replaceAll(ESCAPE_CHARACTER + ESCAPE_CHARACTER, ESCAPE_CHARACTER)
-                            .replaceAll(ESCAPE_CHARACTER + this.delimiter, this.delimiter);
+                            .replaceAll(ESCAPE_CHARACTER + delimiter, delimiter);
         }
     }
 
-    public remask(component: string, toDelimiter: string, fromDelimiter: string = this.delimiter): string {
+    public remask(component: string, toDelimiter: string, fromDelimiter: string): string {
         IllegalArgumentException.assert(this.isValidDelimiter(toDelimiter));
         IllegalArgumentException.assert(this.isValidDelimiter(fromDelimiter));
         IllegalArgumentException.assert(this.isProperlyMasked(component, fromDelimiter, true));
@@ -47,8 +42,7 @@ export class NameParser implements Parser {
         return result;
     }
 
-    public split(source: string): string[] {
-        const delimiter = this.getDelimiterCharacter();
+    public split(source: string, delimiter: string): string[] {
         IllegalArgumentException.assert(this.isProperlyMasked(source, delimiter));
         let result: string[] = [];
         let component: string = "";
@@ -142,14 +136,14 @@ export class NameParser implements Parser {
         return isEscaped ? false : true;
     }
 
-    public isProperlyUnmasked(unmaskedComponent: string, maskedComponent: string): boolean {
+    public isProperlyUnmasked(unmaskedComponent: string, maskedComponent: string, delimiter: string): boolean {
         let newMaskedComponent: string = "";
 
-        if (this.delimiter == ESCAPE_CHARACTER) {
+        if (delimiter == ESCAPE_CHARACTER) {
             newMaskedComponent = unmaskedComponent.replaceAll(ESCAPE_CHARACTER, ESCAPE_CHARACTER + ESCAPE_CHARACTER);
         } else {
             newMaskedComponent = unmaskedComponent.replaceAll(ESCAPE_CHARACTER, ESCAPE_CHARACTER + ESCAPE_CHARACTER)
-                                                  .replaceAll(this.delimiter, ESCAPE_CHARACTER + this.delimiter);
+                                                  .replaceAll(delimiter, ESCAPE_CHARACTER + delimiter);
         }
 
         return newMaskedComponent == maskedComponent;
@@ -157,10 +151,6 @@ export class NameParser implements Parser {
 
     private isValidDelimiter(delimiter: string) {
         return delimiter.length == 1;
-    }
-
-    private getDelimiterCharacter(): string {
-        return this.delimiter;
     }
 }
 

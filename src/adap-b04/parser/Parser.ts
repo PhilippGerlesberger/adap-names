@@ -11,7 +11,7 @@ export interface Parser {
      * @param component The input string.
      * @returns The masked component.
      */
-    mask(component: string): string;
+    mask(component: string, delimiter: string): string;
 
     /**
      * Restores original characters by removing escape sequences.
@@ -21,7 +21,7 @@ export interface Parser {
      * @param component The input string.
      * @returns The unmasked component.
      */
-    unmask(component: string): string;
+    unmask(component: string, delimiter: string): string;
 
     /**
      * Converts a component from one delimiter context to another.
@@ -36,7 +36,7 @@ export interface Parser {
      *                      originates from a different delimiter context.
      * @returns The remasked component.
      */
-    remask(component: string, toDelimiter: string, fromDelimiter?: string): string;
+    remask(component: string, toDelimiter: string, fromDelimiter: string): string;
 
     /**
      * Splits a string into components using the current delimiter,
@@ -47,9 +47,9 @@ export interface Parser {
      * @param source The full input string.
      * @returns The parsed components.
      */
-    split(source: string): string[];
+    split(source: string, delimiter: string): string[];
 
     isProperlyMasked(name: string, delimiter: string, isComponent?: boolean): boolean;
 
-    isProperlyUnmasked(unmaskedComponent: string, maskedComponent: string): boolean;
+    isProperlyUnmasked(unmaskedComponent: string, maskedComponent: string, delimiter: string): boolean;
 }
