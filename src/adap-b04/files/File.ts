@@ -19,17 +19,17 @@ export class File extends Node {
     }
 
     public open(): void {
-        // do something
         const state: FileState = this.doGetFileState();
         IllegalArgumentException.assert(state != FileState.CLOSED);
         IllegalArgumentException.assert(state != FileState.DELETED);
 
-        this.doSetFileState(FileState.OPEN);
+        // do something
     }
 
     public read(noBytes: number): Int8Array {
         const state: FileState = this.doGetFileState();
-        IllegalArgumentException.assert(state == FileState.OPEN);
+        IllegalArgumentException.assert(state != FileState.CLOSED);
+        IllegalArgumentException.assert(state != FileState.DELETED);
         IllegalArgumentException.assert(0 <= noBytes)
         IllegalArgumentException.assert(Number.isFinite(noBytes));
         IllegalArgumentException.assert(Number.isInteger(noBytes));
@@ -41,16 +41,9 @@ export class File extends Node {
         const state: FileState = this.doGetFileState();
         IllegalArgumentException.assert(state == FileState.OPEN);
         // do something
-
-        this.doSetFileState(FileState.CLOSED);
     }
 
     protected doGetFileState(): FileState {
         return this.state;
     }
-
-    protected doSetFileState(state: FileState) {
-        this.state = state;
-    }
-
 }

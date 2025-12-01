@@ -34,7 +34,7 @@ export class Link extends Node {
     }
 
     public rename(bn: string): void {
-        IllegalArgumentException.assert(bn != null);
+        this.assertIsValidBaseName(bn);
         const target = this.ensureTargetNode(this.targetNode);
         target.rename(bn);
     }
@@ -42,5 +42,10 @@ export class Link extends Node {
     protected ensureTargetNode(target: Node | null): Node {
         const result: Node = this.targetNode as Node;
         return result;
+    }
+
+    protected assertIsValidBaseName(bn: string): void {
+        IllegalArgumentException.assert(bn != null);
+        IllegalArgumentException.assert(0 < bn.length);
     }
 }
