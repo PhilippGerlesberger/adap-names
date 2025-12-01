@@ -1,12 +1,14 @@
+import { IllegalArgumentException } from "../common/IllegalArgumentException";
 import { Name } from "../names/Name";
 import { Directory } from "./Directory";
 
-export class Node {
+export class  Node {
 
     protected baseName: string = "";
     protected parentNode: Directory;
 
     constructor(bn: string, pn: Directory) {
+        IllegalArgumentException.assert(bn.length > 0);
         this.doSetBaseName(bn);
         this.parentNode = pn; // why oh why do I have to set this
         this.initialize(pn);
@@ -18,6 +20,7 @@ export class Node {
     }
 
     public move(to: Directory): void {
+        IllegalArgumentException.assert(this.isValidDirectory(to));
         this.parentNode.removeChildNode(this);
         to.addChildNode(this);
         this.parentNode = to;
@@ -47,6 +50,12 @@ export class Node {
 
     public getParentNode(): Directory {
         return this.parentNode;
+    }
+
+    protected isValidDirectory(dir: Directory): boolean {
+        // Check if it's a valid dir name
+        // Check if directory exists
+        return dir != null;
     }
 
 }
