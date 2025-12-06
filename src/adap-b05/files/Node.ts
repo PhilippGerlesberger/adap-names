@@ -1,17 +1,32 @@
 import { IllegalArgumentException } from "../common/IllegalArgumentException";
 import { InvalidStateException } from "../common/InvalidStateException";
+import { ServiceFailureException } from "../common/ServiceFailureException";
 
 import { Name } from "../names/Name";
 import { Directory } from "./Directory";
+import { Link } from "./Link";
+import { Exception } from "../common/Exception";
+
+export enum NodeType {
+    File,
+    Directory,
+    Link,
+    Root,
+    Node
+}
 
 export class Node {
 
     protected baseName: string = "";
     protected parentNode: Directory;
+    protected type: NodeType = NodeType.Node;
 
-    constructor(bn: string, pn: Directory) {
+    constructor(bn: string, pn: Directory, nt?: NodeType) {
         this.doSetBaseName(bn);
         this.parentNode = pn; // why oh why do I have to set this
+        if (nt) {
+            this.type = nt;
+        }
         this.initialize(pn);
     }
 
@@ -58,6 +73,22 @@ export class Node {
      */
     public findNodes(bn: string): Set<Node> {
         throw new Error("needs implementation or deletion");
+        
     }
 
+    protected isDir(): boolean {
+        return this.type == NodeType.Directory || this.type == NodeType.Root;
+    }
+
+    protected isFile(): boolean {
+        return this.type == NodeType.File;
+    }
+
+    protected isLink(): boolean {
+        return this.type == NodeType.Link;
+    }
+
+    protected isRoot(): boolean {
+        return this.type == NodeType.Root;
+    }
 }

@@ -1,6 +1,7 @@
 import { Name } from "../names/Name";
 import { StringName } from "../names/StringName";
 import { Directory } from "./Directory";
+import { NodeType } from "./Node";
 
 export class RootNode extends Directory {
 
@@ -11,7 +12,7 @@ export class RootNode extends Directory {
     }
 
     constructor() {
-        super("", new Object as Directory);
+        super("", new Object as Directory, NodeType.Root);
     }
 
     protected initialize(pn: Directory): void {

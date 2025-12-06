@@ -1,4 +1,4 @@
-import { Node } from "./Node";
+import { Node, NodeType } from "./Node";
 import { Directory } from "./Directory";
 import { MethodFailedException } from "../common/MethodFailedException";
 
@@ -13,7 +13,7 @@ export class File extends Node {
     protected state: FileState = FileState.CLOSED;
 
     constructor(baseName: string, parent: Directory) {
-        super(baseName, parent);
+        super(baseName, parent, NodeType.File);
     }
 
     public open(): void {

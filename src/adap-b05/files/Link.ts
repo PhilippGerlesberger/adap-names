@@ -1,4 +1,4 @@
-import { Node } from "./Node";
+import { Node, NodeType } from "./Node";
 import { Directory } from "./Directory";
 
 export class Link extends Node {
@@ -6,7 +6,7 @@ export class Link extends Node {
     protected targetNode: Node | null = null;
 
     constructor(bn: string, pn: Directory, tn?: Node) {
-        super(bn, pn);
+        super(bn, pn, NodeType.Link);
 
         if (tn != undefined) {
             this.targetNode = tn;

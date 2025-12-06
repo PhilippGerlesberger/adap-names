@@ -1,11 +1,11 @@
-import { Node } from "./Node";
+import { Node, NodeType } from "./Node";
 
 export class Directory extends Node {
 
     protected childNodes: Set<Node> = new Set<Node>();
 
-    constructor(bn: string, pn: Directory) {
-        super(bn, pn);
+    constructor(bn: string, pn: Directory, nt: NodeType = NodeType.Directory) {
+        super(bn, pn, nt);
     }
 
     public hasChildNode(cn: Node): boolean {
