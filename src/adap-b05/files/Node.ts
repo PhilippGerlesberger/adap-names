@@ -72,8 +72,49 @@ export class Node {
      * @param bn basename of node being searched for
      */
     public findNodes(bn: string): Set<Node> {
-        throw new Error("needs implementation or deletion");
+        return this.doFindNodes(bn, this);
+    }
+
+    protected doFindNodes(
+        bn: string,
+        node: Node,
+        result: Set<Node> = new Set<Node>(),
+        visited: Set<Node> = new Set<Node>()
+    ): Set<Node> {
         
+        // Prevent cycles: skip nodes thate were already visited
+        if (visited.has(node))  {
+            return result;
+        }
+
+        // Validate and compare basename; add node if it matches
+        const baseName: string = node.doGetBaseName();
+        node.validateBaseName(baseName);
+        if (baseName == bn) {
+            result.add(node);
+        }
+        
+        // Mark node as visited before traversing further
+        visited.add(node);
+
+        // Recursively traverse children if directory or follow target if link
+        if (node.isDir()) {
+            // Iterate thorugh all child nodes
+            const dir: Directory = node as Directory;
+            const childs: Set<Node> = dir.getChildNodes();
+            for (let child of childs) {
+                this.doFindNodes(bn, child, result, visited);
+            }
+        } else if (node.isLink()) {
+            // Follow the target node
+            const link: Link = node as Link;
+            const targetNode: Node | null = link.getTargetNode();
+            if (targetNode) {
+                this.doFindNodes(bn, targetNode, result, visited);
+            }
+        }
+
+        return result;
     }
 
     protected isDir(): boolean {
@@ -90,5 +131,23 @@ export class Node {
 
     protected isRoot(): boolean {
         return this.type == NodeType.Root;
+    }
+
+    protected validateBaseName(bn: string): void {
+        try {
+            this.assertBaseName(bn);
+        } catch(e) {
+            if (e instanceof Exception) {
+                throw new ServiceFailureException("Invalid baseName", e)
+            } else {
+                throw new Error("Something wrong. Haha!")
+            }
+        }
+    }
+
+    protected assertBaseName(bn: string): void {
+        let isRoot: boolean = this.isRoot();
+        let isValidLength: boolean = 0 < bn.length;
+        InvalidStateException.assert(isRoot || isValidLength);
     }
 }
