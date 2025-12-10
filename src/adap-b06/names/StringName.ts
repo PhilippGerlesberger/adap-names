@@ -2,6 +2,15 @@ import { AbstractName } from "./AbstractName";
 import { Name } from "./Name";
 
 export class StringName extends AbstractName {
+    protected name: string = "";
+    protected noComponents: number = 0;
+    
+    constructor(source: string, delimiter?: string) {
+        super(delimiter);
+        this.name = source;
+        this.noComponents = this.nameParser.split(source, this.delimiter).length;
+    }
+
     protected doGetNoComponents(): number {
         throw new Error("Method not implemented.");
     }
