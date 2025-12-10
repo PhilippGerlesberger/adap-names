@@ -57,12 +57,21 @@ export abstract class AbstractName implements Name {
     // Equality Interface
     // --------------------------------------------------------------------------------------------
     
-    isEqual(other: Object): boolean {
-        throw new Error("Method not implemented.");
+    public isEqual(other: Name): boolean {    
+        return this.asDataString() == other.asDataString() &&
+               this.getDelimiterCharacter() == other.getDelimiterCharacter() &&
+               this.getNoComponents() == other.getNoComponents();
     }
 
-    getHashCode(): number {
-        throw new Error("Method not implemented.");
+    public getHashCode(): number {
+        let hashCode: number = 0;
+        const s: string = this.asDataString();
+        for (let i: number = 0; i < s.length; i++) {
+            let c: number = s.charCodeAt(i);
+            hashCode = (hashCode << 5) - hashCode + c;
+            hashCode |= 0;
+        }
+        return hashCode;
     }
 
     // --------------------------------------------------------------------------------------------
