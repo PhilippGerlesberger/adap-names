@@ -10,11 +10,13 @@ export class StringArrayName extends AbstractName {
     }
 
     protected doGetNoComponents(): number {
-        throw new Error("Method not implemented.");
+        return this.components.length;
     }
+
     protected doGetComponent(i: number): string {
-        throw new Error("Method not implemented.");
+        return this.components[i];
     }
+
     protected doSetComponent(i: number, c: string): Name {
         throw new Error("Method not implemented.");
     }
