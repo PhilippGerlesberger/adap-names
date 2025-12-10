@@ -7,7 +7,7 @@ import { Name } from "./Name";
 
 export abstract class AbstractName implements Name {
 
-    protected delimiter: String = DEFAULT_DELIMITER;
+    protected delimiter: string = DEFAULT_DELIMITER;
 
     constructor (delimiter?: string) {
         if (delimiter) {
