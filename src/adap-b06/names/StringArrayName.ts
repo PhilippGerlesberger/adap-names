@@ -2,6 +2,13 @@ import { AbstractName } from "./AbstractName"
 import { Name } from "./Name";
 
 export class StringArrayName extends AbstractName {
+    protected components: string[] = [];
+
+    constructor(source: string[], delimiter?: string) {
+        super(delimiter);
+        this.components = source.slice();
+    }
+
     protected doGetNoComponents(): number {
         throw new Error("Method not implemented.");
     }
