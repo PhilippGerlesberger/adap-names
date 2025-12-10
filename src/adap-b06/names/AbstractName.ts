@@ -20,7 +20,7 @@ export abstract class AbstractName implements Name {
     }
 
     clone(): Name {
-        throw new Error("Method not implemented.");
+        return this;
     }
 
     // --------------------------------------------------------------------------------------------
