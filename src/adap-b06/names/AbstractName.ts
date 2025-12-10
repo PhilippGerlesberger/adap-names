@@ -115,5 +115,19 @@ export abstract class AbstractName implements Name {
     concat(other: Name): Name {
         return this.doConcat(other);
     }
-    protected abstract doConcat(other: Name): Name;
+
+    protected doConcat(other: Name): Name {
+        let newName: Name = this;
+        
+        for (let i = 0; i < other.getNoComponents(); i++) {
+            const remaskedComponent = this.nameParser.remask(
+                other.getComponent(i),
+                this.delimiter,
+                other.getDelimiterCharacter()
+            );
+            newName = newName.append(remaskedComponent);
+        }
+
+        return newName;
+    }
 }

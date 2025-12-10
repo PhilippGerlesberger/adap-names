@@ -44,20 +44,4 @@ export class StringName extends AbstractName {
         let newName = newComponents.join(this.delimiter);
         return new StringName(newName, this.delimiter);
     }
-
-    protected doConcat(other: Name): Name {
-
-        let newName: Name = this;
-        
-        for (let i = 0; i < other.getNoComponents(); i++) {
-            const remaskedComponent = this.nameParser.remask(
-                other.getComponent(i),
-                this.delimiter,
-                other.getDelimiterCharacter()
-            );
-            newName = newName.append(remaskedComponent);
-        }
-
-        return newName;
-    }
 }
