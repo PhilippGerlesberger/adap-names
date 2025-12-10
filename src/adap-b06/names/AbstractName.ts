@@ -2,17 +2,21 @@ import { IllegalArgumentException } from "../common/IllegalArgumentException";
 import { InvalidStateException } from "../common/InvalidStateException";
 import { MethodFailedException } from "../common/MethodFailedException";
 import { DEFAULT_DELIMITER, ESCAPE_CHARACTER } from "../common/Printable";
+import { NameParser } from "../parser/NameParser";
+import { Parser } from "../parser/Parser";
 import { Name } from "./Name";
 
 
 export abstract class AbstractName implements Name {
 
     protected delimiter: string = DEFAULT_DELIMITER;
+    protected nameParser: Parser;
 
     constructor (delimiter?: string) {
         if (delimiter) {
             this.delimiter = delimiter;
         }
+        this.nameParser = new NameParser();
     }
 
     clone(): Name {
@@ -23,16 +27,30 @@ export abstract class AbstractName implements Name {
     // Printable Interface
     // --------------------------------------------------------------------------------------------
 
-    asString(delimiter?: string): string {
-        throw new Error("Method not implemented.");
+    public asString(delimiter: string = this.delimiter): string {
+        let unmaskComponents: string[] = [];
+        for (let i = 0; i < this.getNoComponents(); i++) {
+            const unmaskComponent = this.nameParser.unmask(this.getComponent(i), this.delimiter);
+            unmaskComponents.push(unmaskComponent);
+        }
+        return unmaskComponents.join(delimiter);
     }
 
-    asDataString(): string {
-        throw new Error("Method not implemented.");
+    public toString(): string {
+        return this.asDataString();
     }
 
-    getDelimiterCharacter(): string {
-        throw new Error("Method not implemented.");
+    public asDataString(): string {
+        let dataComponents: string[] = [];
+        for (let i = 0; i < this.getNoComponents(); i++) {
+            const dataComponent = this.nameParser.remask(this.getComponent(i), DEFAULT_DELIMITER, this.delimiter);
+            dataComponents.push(dataComponent);
+        }
+        return dataComponents.join(DEFAULT_DELIMITER);
+    }
+
+    public getDelimiterCharacter(): string {
+        return this.delimiter;
     }
 
     // --------------------------------------------------------------------------------------------
