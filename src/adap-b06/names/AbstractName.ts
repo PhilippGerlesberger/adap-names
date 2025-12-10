@@ -79,16 +79,18 @@ export abstract class AbstractName implements Name {
     // --------------------------------------------------------------------------------------------
 
     isEmpty(): boolean {
-        throw new Error("Method not implemented.");
+        return this.getNoComponents() == 0;
     }
 
-    getNoComponents(): number {
-        throw new Error("Method not implemented.");
+    public getNoComponents(): number {
+        return this.doGetNoComponents();
     }
+    protected abstract doGetNoComponents(): number;
 
-    getComponent(i: number): string {
-        throw new Error("Method not implemented.");
+    public getComponent(i: number): string {
+        return this.doGetComponent(i);
     }
+    protected abstract doGetComponent(i: number): string;
     
     setComponent(i: number, c: string): Name {
         return this.doSetComponent(i, c);
