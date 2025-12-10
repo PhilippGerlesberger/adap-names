@@ -18,18 +18,38 @@ export class StringArrayName extends AbstractName {
     }
 
     protected doSetComponent(i: number, c: string): Name {
-        throw new Error("Method not implemented.");
+        let newComponents: string[] = this.components;
+        newComponents[i] = c;
+        return new StringArrayName(newComponents, this.delimiter);
     }
+
     protected doInsert(i: number, c: string): Name {
-        throw new Error("Method not implemented.");
+        let newComponents: string[] = this.components;
+        newComponents.splice(i, 0, c);
+        return new StringArrayName(newComponents, this.delimiter);
     }
+
     protected doAppend(c: string): Name {
-        throw new Error("Method not implemented.");
+        let newComponents: string[] = this.components;
+        newComponents.push(c);
+        return new StringArrayName(newComponents, this.delimiter);
     }
+
     protected doRemove(i: number): Name {
-        throw new Error("Method not implemented.");
+        let newComponents: string[] = this.components;
+        newComponents.splice(i, 1);
+        return new StringArrayName(newComponents, this.delimiter);
     }
+
     protected doConcat(other: Name): Name {
-        throw new Error("Method not implemented.");
+        let newComponents: string[] = this.components;
+        for (let i = 0; i < other.getNoComponents(); i++) {
+            const otherComponent = other.getComponent(i);
+            const otherDelimiter = other.getDelimiterCharacter();
+            const component = this.nameParser.remask(otherComponent, this.delimiter, otherDelimiter)
+            
+            newComponents.push(component);
+        }
+        return new StringArrayName(newComponents, this.delimiter);
     }
 }
