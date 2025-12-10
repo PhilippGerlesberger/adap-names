@@ -12,11 +12,13 @@ export class StringName extends AbstractName {
     }
 
     protected doGetNoComponents(): number {
-        throw new Error("Method not implemented.");
+        return this.noComponents;
     }
+
     protected doGetComponent(i: number): string {
-        throw new Error("Method not implemented.");
+        return this.nameParser.split(this.name, this.delimiter)[i];
     }
+
     protected doSetComponent(i: number, c: string): Name {
         throw new Error("Method not implemented.");
     }
