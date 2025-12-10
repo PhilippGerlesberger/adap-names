@@ -20,18 +20,44 @@ export class StringName extends AbstractName {
     }
 
     protected doSetComponent(i: number, c: string): Name {
-        throw new Error("Method not implemented.");
+        let newComponents: string[] = this.nameParser.split(this.name, this.delimiter);
+        newComponents[i] = c;
+        let newName = newComponents.join(this.delimiter);
+        return new StringName(newName, this.delimiter);
     }
+
     protected doInsert(i: number, c: string): Name {
-        throw new Error("Method not implemented.");
+        let newComponents: string[] = this.nameParser.split(this.name, this.delimiter);
+        newComponents.splice(i, 0, c);
+        let newName = newComponents.join(this.delimiter);
+        return new StringName(newName, this.delimiter);
     }
+
     protected doAppend(c: string): Name {
-        throw new Error("Method not implemented.");
+        const newName: string = this.isEmpty() ? c : this.name + this.delimiter + c;
+        return new StringName(newName, this.delimiter);
     }
+
     protected doRemove(i: number): Name {
-        throw new Error("Method not implemented.");
+        let newComponents: string[] = this.nameParser.split(this.name, this.delimiter);
+        newComponents.splice(i, 1);
+        let newName = newComponents.join(this.delimiter);
+        return new StringName(newName, this.delimiter);
     }
+
     protected doConcat(other: Name): Name {
-        throw new Error("Method not implemented.");
+
+        let newName: Name = this;
+        
+        for (let i = 0; i < other.getNoComponents(); i++) {
+            const remaskedComponent = this.nameParser.remask(
+                other.getComponent(i),
+                this.delimiter,
+                other.getDelimiterCharacter()
+            );
+            newName = newName.append(remaskedComponent);
+        }
+
+        return newName;
     }
 }
