@@ -2,8 +2,8 @@ import { AbstractName } from "./AbstractName";
 import { Name } from "./Name";
 
 export class StringName extends AbstractName {
-    protected name: string = "";
-    protected noComponents: number = 0;
+    protected readonly name: string = "";
+    protected readonly noComponents: number = 0;
     
     constructor(source: string, delimiter?: string) {
         super(delimiter);

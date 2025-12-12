@@ -9,8 +9,8 @@ import { Name } from "./Name";
 
 export abstract class AbstractName implements Name {
 
-    protected delimiter: string = DEFAULT_DELIMITER;
-    protected nameParser: Parser;
+    protected readonly delimiter: string = DEFAULT_DELIMITER;
+    protected readonly nameParser: Parser;
 
     constructor (delimiter?: string) {
         if (delimiter) {
