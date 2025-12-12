@@ -14,6 +14,7 @@ export abstract class AbstractName implements Name {
 
     constructor (delimiter?: string) {
         if (delimiter) {
+            this.assertIsValidDelimiter(delimiter);
             this.delimiter = delimiter;
         }
         this.nameParser = new NameParser();
@@ -28,6 +29,7 @@ export abstract class AbstractName implements Name {
     // --------------------------------------------------------------------------------------------
 
     public asString(delimiter: string = this.delimiter): string {
+        this.assertIsValidDelimiter(delimiter);
         let unmaskComponents: string[] = [];
         for (let i = 0; i < this.getNoComponents(); i++) {
             const unmaskComponent = this.nameParser.unmask(this.getComponent(i), this.delimiter);
@@ -88,26 +90,33 @@ export abstract class AbstractName implements Name {
     protected abstract doGetNoComponents(): number;
 
     public getComponent(i: number): string {
+        this.assertIsValidIndex(i);
         return this.doGetComponent(i);
     }
     protected abstract doGetComponent(i: number): string;
     
     setComponent(i: number, c: string): Name {
+        this.assertIsValidIndex(i);
+        this.assertIsProperlyMasked(c);
         return this.doSetComponent(i, c);
     }
     protected abstract doSetComponent(i: number, c: string): Name
 
     insert(i: number, c: string): Name {
+        this.assertIsValidIndex(i, false);
+        this.assertIsProperlyMasked(c);
         return this.doInsert(i, c);
     }
     protected abstract doInsert(i: number, c: string): Name;
 
     append(c: string): Name {
+        this.assertIsProperlyMasked(c);
         return this.doAppend(c);
     }
     protected abstract doAppend(c: string): Name;
 
     remove(i: number): Name {
+        this.assertIsValidIndex(i);
         return this.doRemove(i);
     }
     protected abstract doRemove(i: number): Name;
@@ -129,5 +138,25 @@ export abstract class AbstractName implements Name {
         }
 
         return newName;
+    }
+
+    protected assertIsValidDelimiter(delimiter: string) {
+        IllegalArgumentException.assert(delimiter.length == 1);
+    }
+
+    protected assertIsValidIndex(idx: number, exclusive: boolean = true) {  
+        IllegalArgumentException.assert(Number.isFinite(idx));
+        IllegalArgumentException.assert(Number.isInteger(idx));
+        IllegalArgumentException.assert(0 <= idx);
+        if (exclusive) {
+            IllegalArgumentException.assert(idx < this.doGetNoComponents())
+        } else {
+            IllegalArgumentException.assert(idx <= this.doGetNoComponents())
+        }
+    }
+
+    protected assertIsProperlyMasked(nameComponent: string, isComponent: boolean = true) {
+        const delimiter: string = this.getDelimiterCharacter();
+        IllegalArgumentException.assert(this.nameParser.isProperlyMasked(nameComponent, delimiter, isComponent));
     }
 }
