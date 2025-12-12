@@ -10,6 +10,82 @@ import { MethodFailedException } from "../../../src/adap-b06/common/MethodFailed
 import { InvalidStateException } from "../../../src/adap-b06/common/InvalidStateException";
 
 
+
+describe("Equality test", () => {
+  it("test isEqual1", () => {
+    let n: Name = new StringName("os.cs.fau.de");
+    let m: Name = new StringName("os.cs.fau.de");
+    expect(n.isEqual(m)).toBe(true);
+    expect(n.getHashCode() == m.getHashCode()).toBe(true);
+  });
+  it ("test isEqual 2", () => {
+    let n: Name = new StringArrayName(["os", "cs", "fau", "de"]);
+    let m: Name = new StringArrayName(["os", "cs", "fau", "de"]);
+    expect(n.isEqual(m)).toBe(true);
+    expect(n.getHashCode() == m.getHashCode()).toBe(true);
+  });
+  it ("test isEqual 3", () => {
+    let n: Name = new StringName("os.cs.fau.de");
+    let m: Name = new StringArrayName(["os", "cs", "fau", "de"]);
+    n = n.setComponent(3, "org");
+    m = m.setComponent(3, "org");
+    expect(n.isEqual(m)).toBe(true);
+    expect(n.getHashCode() == m.getHashCode()).toBe(true);
+  });
+  it ("test isEqual 4", () => {
+    let n: Name = new StringName("os.cs.fau.de");
+    let m: Name = new StringArrayName(["os", "cs", "fau", "de"]);
+    n = n.setComponent(3, "org");
+    m = m.setComponent(3, "com");
+    expect(n.isEqual(m)).toBe(false);
+    expect(n.getHashCode() == m.getHashCode()).toBe(false);
+  });
+  it ("test isEqual 5", () => {
+    let n: Name = new StringName("os.cs.fau.de");
+    let m: Name = new StringArrayName(["os", "cs", "fau", "de"], "#");
+    expect(n.isEqual(m)).toBe(false);
+    expect(n.getHashCode() == m.getHashCode()).toBe(true);
+  });
+  it ("test isEqual 6", () => {
+    let n: Name = new StringName("");
+    let m: Name = new StringArrayName([]);
+    expect(n.isEqual(m)).toBe(false);
+    expect(n.getHashCode() == m.getHashCode()).toBe(true);
+    n = n.remove(0);
+    expect(n.isEqual(m)).toBe(true);
+    expect(n.getHashCode() == m.getHashCode()).toBe(true);
+  });
+  it ("test isEqual 7", () => {
+    let n: Name = new StringName("");
+    let m: Name = new StringArrayName([]);
+    n = n.remove(0);
+    n = n.append("oss");
+    m = m.append("oss");
+    expect(n.isEqual(m)).toBe(true);
+    expect(n.getHashCode() == m.getHashCode()).toBe(true);
+  });
+  it ("test isEqual 8", () => {
+    let n: Name = new StringArrayName(["a", "a"]);
+    let m: Name = new StringName("a.a");
+    let a: Name = n.concat(m);
+    let b: Name = m.concat(n);
+    expect(a.isEqual(b)).toBe(true);
+    expect(a.getHashCode() == b.getHashCode()).toBe(true);
+  });
+  it("test isEqual 9", () => {
+    let n: Name = new StringName("os.cs.fau.de");
+    let m: Name = n.clone() as Name;
+    expect(n.isEqual(m)).toBe(true);
+    expect(n.getHashCode() == m.getHashCode()).toBe(true);
+  });
+  it ("test isEqual 10", () => {
+    let n: Name = new StringArrayName(["os", "cs", "fau", "de"]);
+    let m: Name = n.clone() as Name;
+    expect(n.isEqual(m)).toBe(true);
+    expect(n.getHashCode() == m.getHashCode()).toBe(true);
+  });
+});
+
 describe("Precondition Tests", () => {
 
   describe("asString Test", () => {
